@@ -37,6 +37,15 @@ mkdir -p "$TMP_ROOT"
 TMP_ROOT=$(cd "$TMP_ROOT" && pwd)
 TASK_TMPS=()
 
+# Bound for the poll loops below that wait on a synchronization point a real
+# relaunch has to reach. Every one of them exits the instant its condition is
+# met, so this bound only governs how long a genuinely stuck run takes to fail;
+# a tight bound instead turns an ordinarily slow machine into a spurious
+# failure. Measured: a relaunch needs well over 2s to reach trace delivery on a
+# loaded agent box, which is what the previous 2s bound kept reporting as
+# "relaunch did not reach trace delivery".
+RELAUNCH_POLL_TICKS=3000  # ticks of the /bin/sleep 0.01 the loops use
+
 relaunch_cleanup() {
   local d
   for d in "${TASK_TMPS[@]:-}"; do
@@ -365,7 +374,7 @@ test_relaunch_serializes_concurrent_durable_metadata_publication() {
     FM_FAKE_TRACE_RELEASE="$launch_release" \
     run_control "$dir" rl28 relaunch --note "continue after publication" > "$dir/control.out" &
   control_pid=$!
-  while [ ! -e "$prepare" ] && [ "$i" -lt 200 ]; do
+  while [ ! -e "$prepare" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -384,7 +393,7 @@ test_relaunch_serializes_concurrent_durable_metadata_publication() {
       --carry-platform x --carry-max 280 > "$dir/link.out" 2>&1 &
   link_pid=$!
   i=0
-  while [ ! -e "$waiting" ] && [ "$i" -lt 200 ]; do
+  while [ ! -e "$waiting" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -397,7 +406,7 @@ test_relaunch_serializes_concurrent_durable_metadata_publication() {
   }
   : > "$launch_release"
   i=0
-  while [ ! -e "$ready" ] && [ "$i" -lt 200 ]; do
+  while [ ! -e "$ready" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -1004,7 +1013,7 @@ test_prepublication_failure_keeps_concurrent_durable_metadata() {
     run_control "$dir" rl30 relaunch --harness codex --note "preserve concurrent metadata" \
       > "$dir/control.out" &
   control_pid=$!
-  while [ ! -e "$dir/cwd-race-ready" ] && [ "$i" -lt 200 ]; do
+  while [ ! -e "$dir/cwd-race-ready" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -1252,7 +1261,7 @@ test_concurrent_relaunch_is_refused() {
   ) &
   holder=$!
   i=0
-  while [ ! -e "$lock" ] && [ "$i" -lt 100 ]; do
+  while [ ! -e "$lock" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     sleep 0.1
     i=$((i + 1))
   done
@@ -1281,7 +1290,7 @@ test_direct_spawn_relaunch_participates_in_the_lifecycle_lock() {
     sleep 30
   ) &
   holder=$!
-  while [ ! -e "$lock" ] && [ "$i" -lt 100 ]; do
+  while [ ! -e "$lock" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     sleep 0.1
     i=$((i + 1))
   done
@@ -1308,7 +1317,7 @@ test_promotion_participates_in_the_lifecycle_lock_before_metadata_resolution() {
     sleep 30
   ) &
   holder=$!
-  while [ ! -e "$lock" ] && [ "$i" -lt 100 ]; do
+  while [ ! -e "$lock" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
     sleep 0.1
     i=$((i + 1))
   done
@@ -1325,6 +1334,84 @@ test_promotion_participates_in_the_lifecycle_lock_before_metadata_resolution() {
 }
 
 # --- 6. fm-spawn --relaunch's own refusals -----------------------------------
+
+# Remote Control is resolved fresh on every spawn, INCLUDING a relaunch, and each
+# relaunch starts a NEW Remote Control session rather than reattaching to the one
+# its dead predecessor used: what belongs in the operator's session list is the
+# worker running now. The name carries that because its launch token is derived
+# from spawn_gen, the incarnation token this path already regenerates per launch
+# and records in state/<id>.meta, so this case asserts the emitted name against
+# the recorded value rather than against a constant.
+# The name's shape and caps are owned by tests/fm-crew-remote-control.test.sh;
+# this case owns the relaunch path's re-resolution and per-launch distinctness.
+rc_launch_token() {  # <spawn-gen>
+  if command -v shasum >/dev/null 2>&1; then
+    printf '%s' "$1" | shasum -a 256 | awk '{print substr($1,1,6)}'
+  else
+    printf '%s' "$1" | sha256sum | awk '{print substr($1,1,6)}'
+  fi
+}
+
+test_relaunch_reresolves_crewmate_remote_control() {
+  local dir launched first second home gen
+  dir=$(new_case rcrelaunch rl60)
+  add_ship_task "$dir" rl60 claude
+  home=$(CDPATH='' cd -- "$dir/home" && pwd -P)
+  # fm-spawn types the flag only at a claude whose own --help advertises it, so
+  # this case supplies that claude rather than depending on whatever version the
+  # machine running the suite happens to have installed. The probe's own
+  # contract, including every direction that suppresses the flag, is owned by
+  # tests/fm-crew-remote-control.test.sh.
+  cat > "$dir/fakebin/claude" <<'SH'
+#!/usr/bin/env bash
+if [ "${1:-}" = --help ]; then
+  printf '%s\n' 'Usage: claude [options] [prompt]' '  --remote-control [name]   Start an interactive session with Remote Control enabled'
+fi
+exit 0
+SH
+  chmod +x "$dir/fakebin/claude"
+  printf 'zsh' > "$dir/fake/command"
+  : > "$dir/fake/literal"
+
+  # The knob is ABSENT, which is the default-on path every home lands on.
+  run_spawn "$dir" rl60 --relaunch >/dev/null
+  launched=$(cat "$dir/fake/literal")
+  first=$(printf '%s' "$launched" | sed -n "s/.*--remote-control '\([^']*\)'.*/\1/p")
+  [ -n "$first" ] \
+    || fail "a relaunched claude worker must come back with Remote Control on"$'\n'"actual: $launched"
+  gen=$(meta_field "$dir" rl60 spawn_gen)
+  [ -n "$gen" ] || fail "the relaunch must record a spawn_gen incarnation token"
+  [ "$first" = "rl60.$(basename "$home").$(rc_launch_token "$gen")" ] \
+    || fail "the relaunched session name must be <task-id>.<home>.<launch-token> for THIS launch"$'\n'"expected: rl60.$(basename "$home").$(rc_launch_token "$gen")"$'\n'"actual:   $first"
+
+  # Relaunched again: a new incarnation is a new session, so the operator is
+  # looking at the worker that is running rather than at a name left over from
+  # the one that died.
+  printf 'zsh' > "$dir/fake/command"
+  : > "$dir/fake/literal"
+  run_spawn "$dir" rl60 --relaunch >/dev/null
+  launched=$(cat "$dir/fake/literal")
+  second=$(printf '%s' "$launched" | sed -n "s/.*--remote-control '\([^']*\)'.*/\1/p")
+  gen=$(meta_field "$dir" rl60 spawn_gen)
+  [ "$second" = "rl60.$(basename "$home").$(rc_launch_token "$gen")" ] \
+    || fail "the second relaunch's name must track its own spawn_gen"$'\n'"expected: rl60.$(basename "$home").$(rc_launch_token "$gen")"$'\n'"actual:   $second"
+  [ "$second" != "$first" ] \
+    || fail "relaunching the same task in the same home must start a NEW session, not reuse the name $first"
+
+  # Same task, opted out: the replacement must go back to a plain launch, so the
+  # assertions above are pinning the resolved config rather than a constant.
+  mkdir -p "$dir/home/config"
+  printf 'off\n' > "$dir/home/config/crew-remote-control"
+  printf 'zsh' > "$dir/fake/command"
+  : > "$dir/fake/literal"
+  run_spawn "$dir" rl60 --relaunch >/dev/null
+  launched=$(cat "$dir/fake/literal")
+  assert_contains "$launched" "encode launch-brief" \
+    "the control relaunch did not launch, so its no-flag result would be vacuous"
+  assert_not_contains "$launched" "--remote-control" \
+    "with config/crew-remote-control=off a relaunch must go back to a plain claude launch"
+  pass "fm-spawn --relaunch: Remote Control is re-resolved per launch and never reuses a session name"
+}
 
 test_spawn_relaunch_refuses_a_live_agent() {
   local dir out rc
@@ -1536,6 +1623,7 @@ test_secondmate_checkpoint_refuses_unreadable_child_state
 test_concurrent_relaunch_is_refused
 test_direct_spawn_relaunch_participates_in_the_lifecycle_lock
 test_promotion_participates_in_the_lifecycle_lock_before_metadata_resolution
+test_relaunch_reresolves_crewmate_remote_control
 test_spawn_relaunch_refuses_a_live_agent
 test_spawn_relaunch_refuses_a_symlinked_task_record_before_inspection
 test_spawn_relaunch_keeps_its_early_meta_lock_continuous
