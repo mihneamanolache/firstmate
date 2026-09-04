@@ -37,14 +37,23 @@ mkdir -p "$TMP_ROOT"
 TMP_ROOT=$(cd "$TMP_ROOT" && pwd)
 TASK_TMPS=()
 
-# Bound for the poll loops below that wait on a synchronization point a real
+# Bounds for the poll loops below that wait on a synchronization point a real
 # relaunch has to reach. Every one of them exits the instant its condition is
-# met, so this bound only governs how long a genuinely stuck run takes to fail;
+# met, so a bound only governs how long a genuinely stuck run takes to fail;
 # a tight bound instead turns an ordinarily slow machine into a spurious
-# failure. Measured: a relaunch needs well over 2s to reach trace delivery on a
-# loaded agent box, which is what the previous 2s bound kept reporting as
-# "relaunch did not reach trace delivery".
-RELAUNCH_POLL_TICKS=3000  # ticks of the /bin/sleep 0.01 the loops use
+# failure, and a loose one hides the loop's own `fail` message behind the
+# per-script timeout in bin/fm-test-run.sh.
+# The loops poll at two different intervals, so each bound is expressed in
+# wall-clock seconds and converted at its own interval; the constant names carry
+# the interval so a bound can never be spent against the wrong one.
+# Measured: a relaunch needs well over 2s to reach trace delivery on a loaded
+# agent box, which is what the previous 2s bound kept reporting as "relaunch did
+# not reach trace delivery", hence the generous 30s for that class. Staging a
+# held lock file is a local operation that needs no such margin.
+RELAUNCH_POLL_SECONDS=30
+RELAUNCH_POLL_TICKS_10MS=$((RELAUNCH_POLL_SECONDS * 100))   # loops using /bin/sleep 0.01
+LOCK_STAGE_POLL_SECONDS=10
+LOCK_STAGE_POLL_TICKS_100MS=$((LOCK_STAGE_POLL_SECONDS * 10))  # loops using sleep 0.1
 
 relaunch_cleanup() {
   local d
@@ -374,7 +383,7 @@ test_relaunch_serializes_concurrent_durable_metadata_publication() {
     FM_FAKE_TRACE_RELEASE="$launch_release" \
     run_control "$dir" rl28 relaunch --note "continue after publication" > "$dir/control.out" &
   control_pid=$!
-  while [ ! -e "$prepare" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$prepare" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS_10MS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -393,7 +402,7 @@ test_relaunch_serializes_concurrent_durable_metadata_publication() {
       --carry-platform x --carry-max 280 > "$dir/link.out" 2>&1 &
   link_pid=$!
   i=0
-  while [ ! -e "$waiting" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$waiting" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS_10MS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -406,7 +415,7 @@ test_relaunch_serializes_concurrent_durable_metadata_publication() {
   }
   : > "$launch_release"
   i=0
-  while [ ! -e "$ready" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$ready" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS_10MS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -1013,7 +1022,7 @@ test_prepublication_failure_keeps_concurrent_durable_metadata() {
     run_control "$dir" rl30 relaunch --harness codex --note "preserve concurrent metadata" \
       > "$dir/control.out" &
   control_pid=$!
-  while [ ! -e "$dir/cwd-race-ready" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$dir/cwd-race-ready" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS_10MS" ]; do
     /bin/sleep 0.01
     i=$((i + 1))
   done
@@ -1261,7 +1270,7 @@ test_concurrent_relaunch_is_refused() {
   ) &
   holder=$!
   i=0
-  while [ ! -e "$lock" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$lock" ] && [ "$i" -lt "$LOCK_STAGE_POLL_TICKS_100MS" ]; do
     sleep 0.1
     i=$((i + 1))
   done
@@ -1290,7 +1299,7 @@ test_direct_spawn_relaunch_participates_in_the_lifecycle_lock() {
     sleep 30
   ) &
   holder=$!
-  while [ ! -e "$lock" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$lock" ] && [ "$i" -lt "$LOCK_STAGE_POLL_TICKS_100MS" ]; do
     sleep 0.1
     i=$((i + 1))
   done
@@ -1317,7 +1326,7 @@ test_promotion_participates_in_the_lifecycle_lock_before_metadata_resolution() {
     sleep 30
   ) &
   holder=$!
-  while [ ! -e "$lock" ] && [ "$i" -lt "$RELAUNCH_POLL_TICKS" ]; do
+  while [ ! -e "$lock" ] && [ "$i" -lt "$LOCK_STAGE_POLL_TICKS_100MS" ]; do
     sleep 0.1
     i=$((i + 1))
   done

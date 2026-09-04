@@ -1799,7 +1799,7 @@ claude_remote_control_probe() {  # <binary>
 # would leave one loaded moment disabling Remote Control on that home until the
 # binary itself changed.
 claude_remote_control_support() {
-  local binary fingerprint cache line verdict probe=0
+  local binary fingerprint cache tmp line verdict probe=0
   binary=$(type -P -- claude 2>/dev/null) || binary=
   if [ -z "$binary" ] || [ ! -x "$binary" ]; then
     printf 'unsupported\n'
@@ -1807,7 +1807,7 @@ claude_remote_control_support() {
   fi
   fingerprint=$(claude_binary_fingerprint "$binary") || fingerprint=
   cache="$STATE/$FM_CLAUDE_REMOTE_CONTROL_PROBE_CACHE"
-  if [ -n "$fingerprint" ] && [ -r "$cache" ]; then
+  if [ -n "$fingerprint" ] && [ -f "$cache" ] && [ ! -L "$cache" ] && [ -r "$cache" ]; then
     line=$(head -n 1 "$cache" 2>/dev/null) || line=
     case "$line" in
       "v1 $fingerprint supported") printf 'supported\n'; return 0 ;;
@@ -1821,7 +1821,13 @@ claude_remote_control_support() {
     *) printf 'unsupported\n'; return 0 ;;
   esac
   if [ -n "$fingerprint" ]; then
-    printf 'v1 %s %s\n' "$fingerprint" "$verdict" > "$cache" 2>/dev/null || true
+    tmp="$STATE/$FM_CLAUDE_REMOTE_CONTROL_PROBE_CACHE.${BASHPID:-$$}"
+    rm -f "$tmp" 2>/dev/null || true
+    if printf 'v1 %s %s\n' "$fingerprint" "$verdict" > "$tmp" 2>/dev/null; then
+      mv -f "$tmp" "$cache" 2>/dev/null || rm -f "$tmp" 2>/dev/null || true
+    else
+      rm -f "$tmp" 2>/dev/null || true
+    fi
   fi
   printf '%s\n' "$verdict"
 }

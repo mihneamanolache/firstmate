@@ -799,6 +799,51 @@ test_a_durable_probe_verdict_is_cached() {
   pass "probe: a verdict about the binary is cached for the next spawn"
 }
 
+# The cache is an ordinary state artifact, so it obeys the rule the rest of
+# $STATE obeys: a symlink standing where a state file belongs is never followed
+# and never written through. A home migrated with rsync -l, or an artifact
+# planted by anything that can write $STATE, would otherwise let the cache path
+# both serve a verdict the home never derived and truncate an unrelated file on
+# the next claude spawn.
+test_a_symlinked_probe_cache_is_neither_followed_nor_written_through() {
+  local rec id_a id_b cache decoy launch probes
+  id_a=rc-symlink-g11
+  id_b=rc-symlink-g12
+  rec=$(make_spawn_case rc-symlink claude - "$id_a" "$id_b")
+  read_case_record "$rec"
+  FM_FAKE_CLAUDE_PROBE_LOG="$CASE_DIR/probe.log"
+  : > "$FM_FAKE_CLAUDE_PROBE_LOG"
+
+  # Phase one produces a genuine cached verdict for THIS binary, which is what
+  # makes the decoy below a verdict the read would actually honor if it followed
+  # the link - the binary is untouched, so the fingerprint still matches.
+  run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id_a" "$PROJ_DIR" >/dev/null
+  cache="$HOME_DIR/state/.claude-remote-control-probe"
+  [ -f "$cache" ] || fail "the first spawn should have written a probe cache at $cache"
+  # The decoy's FIRST line is the genuine verdict, so a read that followed the
+  # link would be served a hit; the second line is unrelated bytes the write must
+  # not destroy, standing in for whatever real file a planted link points at.
+  decoy="$CASE_DIR/decoy-cache"
+  { cat "$cache"; printf 'unrelated bytes the cache write must not destroy\n'; } > "$decoy"
+  rm -f "$cache"
+  ln -s "$decoy" "$cache"
+  probes=$(grep -c . "$FM_FAKE_CLAUDE_PROBE_LOG")
+  [ "$probes" -eq 1 ] || fail "the first spawn should probe exactly once, probed $probes times"
+
+  run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id_b" "$PROJ_DIR" >/dev/null
+  launch=$(cat "$LAUNCH_LOG")
+  assert_contains "$launch" "--remote-control '$(expected_rc_name "$HOME_DIR" "$id_b")'" \
+    "a symlinked cache must still leave a working Remote Control launch"
+  probes=$(grep -c . "$FM_FAKE_CLAUDE_PROBE_LOG")
+  [ "$probes" -eq 2 ] \
+    || fail "a symlinked cache must be treated as no cached verdict and re-probed, probed $probes times"
+  [ ! -L "$cache" ] || fail "the spawn must replace the symlink rather than write through it"
+  grep -q 'unrelated bytes the cache write must not destroy' "$decoy" \
+    || fail "the spawn wrote through the symlink and destroyed its target at $decoy"
+  unset FM_FAKE_CLAUDE_PROBE_LOG
+  pass "probe: a symlinked cache is neither followed nor written through"
+}
+
 # --- 4. every other harness is untouched -------------------------------------
 
 # One row per verified non-claude crewmate adapter, with the knob ABSENT, so the
@@ -1008,6 +1053,7 @@ test_the_probe_uses_the_shared_bounded_runner
 test_a_transient_probe_failure_is_not_cached
 test_a_probe_that_hits_the_bound_is_not_cached
 test_a_durable_probe_verdict_is_cached
+test_a_symlinked_probe_cache_is_neither_followed_nor_written_through
 test_default_never_touches_another_harness
 test_default_never_rewrites_a_raw_launch_command
 test_default_never_reaches_a_secondmate_launch
