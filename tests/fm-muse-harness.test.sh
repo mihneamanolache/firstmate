@@ -13,8 +13,6 @@ set -u
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-fm_test_require_tool node 'muse session-log resolution runs through it (bin/fm-busy-lib.sh)'
-
 # bin/fm-harness.sh checks verified ENV markers before ancestry. Muse is
 # markerless, so an inherited Cursor/Claude/Pi/Grok marker would outrank the
 # versioned muse-bin ancestor these detection cases launch. Drop the ambient

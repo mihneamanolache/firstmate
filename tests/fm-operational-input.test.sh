@@ -5,8 +5,6 @@ set -u
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-fm_test_require_tool node 'the OpenCode cross-language adapter case invokes .opencode/plugins/lib/fm-operational-input.js through it'
-
 OWNER="$ROOT/bin/fm-operational-input.sh"
 # shellcheck source=/dev/null
 . "$OWNER"

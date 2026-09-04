@@ -51,35 +51,6 @@ pass() {
   printf 'ok - %s\n' "$1"
 }
 
-# --- external-tool preconditions --------------------------------------------
-#
-# fm_test_require_tool <tool> [why]
-#
-# Declares a whole-suite dependency on an external interpreter or CLI that the
-# code under test really shells out to. Call it at the TOP of a test file,
-# before any assertion runs: bin/fm-test-run.sh classifies a run as a gate skip
-# only when the FIRST non-empty output line matches "skip:", so a precondition
-# printed after an `ok -` line is recorded as an ordinary pass instead.
-#
-# Skipping is the honest outcome, not a convenience. Several firstmate guards
-# deliberately FAIL OPEN when their interpreter is absent (bin/fm-cd-pretool-check.sh
-# and bin/fm-arm-pretool-check.sh both `exit 0` with no node), so on a node-less
-# host every deny expectation in their acceptance matrices inverts to allow and
-# the suite reports a policy verdict the host never evaluated. A named skip says
-# which tool was missing; it never stands in for an assertion that ran.
-fm_test_require_tool() {
-  local tool=$1 why=${2:-}
-  if command -v "$tool" >/dev/null 2>&1; then
-    return 0
-  fi
-  if [ -n "$why" ]; then
-    printf 'skip: %s not found (%s)\n' "$tool" "$why"
-  else
-    printf 'skip: %s not found\n' "$tool"
-  fi
-  exit 0
-}
-
 # --- self-cleaning temp root ------------------------------------------------
 #
 # fm_test_tmproot <prefix> echoes a fresh temp dir and registers it for removal

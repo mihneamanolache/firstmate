@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Behavior tests for tests/lib.sh's shared fixture-tempdir helper
-# (fm_test_tmproot / fm_test_cleanup / fm_test_reap_orphans) and its shared
-# external-tool precondition (fm_test_require_tool).
+# (fm_test_tmproot / fm_test_cleanup / fm_test_reap_orphans).
 #
 # The near-universal call pattern across this suite is
 # `TMP_ROOT=$(fm_test_tmproot prefix)`, which forks a subshell to capture the
@@ -165,67 +164,9 @@ test_orphan_sweep_reaps_read_only_package_tree() {
   pass "the orphan sweep reaps read-only package fixtures"
 }
 
-
-# --- fm_test_require_tool ---------------------------------------------------
-#
-# The precondition exists so a host missing an interpreter the code under test
-# really shells out to reports a named skip instead of a false verdict. Both
-# halves matter: an absent tool must stop the suite before its first assertion,
-# and a present tool must not perturb the run at all. Each case drives the real
-# helper in a separate bash process, exactly as a test file calls it, and reads
-# only that process's stdout and exit status.
-
-# require_tool_child <tool> [why]: source tests/lib.sh in a fresh shell, call
-# the precondition, then print a marker only reachable if it returned.
-require_tool_child() {
-  FM_TEST_SKIP_ORPHAN_REAP=1 bash -c '
-    . "$1"
-    shift
-    fm_test_require_tool "$@"
-    printf "reached-the-first-assertion\n"
-  ' _ "$LIB" "$@" 2>&1
-}
-
-test_require_tool_skips_before_the_first_assertion() {
-  local absent out rc
-  absent="fm-absent-tool-$$"
-  out=$(require_tool_child "$absent" 'the guard evaluates its policy through it')
-  rc=$?
-  expect_code 0 "$rc" "an absent required tool must skip cleanly rather than fail"
-  [ "$out" = "skip: $absent not found (the guard evaluates its policy through it)" ] \
-    || fail "an absent tool should print exactly one named skip line, got: $out"
-  pass "fm_test_require_tool: an absent tool names itself and stops before any assertion"
-}
-
-test_require_tool_skip_is_the_first_output_line() {
-  local absent out first
-  absent="fm-absent-tool-first-$$"
-  out=$(require_tool_child "$absent")
-  first=$(printf '%s\n' "$out" | awk 'NF { print; exit }')
-  # bin/fm-test-run.sh's detect_gate_skip only classifies a run as a gate skip
-  # when the FIRST non-empty line matches this shape, so the reason-less form
-  # has to satisfy it too.
-  [ "$first" = "skip: $absent not found" ] \
-    || fail "the reason-less skip must still be the first non-empty line, got: $first"
-  pass "fm_test_require_tool: the skip line is the first output the runner reads"
-}
-
-test_require_tool_is_inert_when_the_tool_is_present() {
-  local out rc
-  out=$(require_tool_child sh 'sh is on every host this suite runs on')
-  rc=$?
-  expect_code 0 "$rc" "a present required tool must let the suite continue"
-  [ "$out" = "reached-the-first-assertion" ] \
-    || fail "a present tool must produce no output and no skip, got: $out"
-  pass "fm_test_require_tool: a present tool is silent and the suite proceeds"
-}
-
 test_fixture_root_gone_after_normal_exit
 test_fixture_root_gone_after_sigterm
 test_cleanup_registry_resists_precreation
 test_fixture_registration_failure_rolls_back_root
 test_orphan_sweep_respects_fixture_ownership
 test_orphan_sweep_reaps_read_only_package_tree
-test_require_tool_skips_before_the_first_assertion
-test_require_tool_skip_is_the_first_output_line
-test_require_tool_is_inert_when_the_tool_is_present

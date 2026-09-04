@@ -11,8 +11,6 @@ set -u
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-fm_test_require_tool node 'the watcher-arm guard evaluates bin/fm-arm-command-policy.mjs through it and fails open without it'
-
 CHECK="$ROOT/bin/fm-arm-pretool-check.sh"
 POLICY="$ROOT/bin/fm-arm-command-policy.mjs"
 
