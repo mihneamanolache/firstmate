@@ -350,6 +350,7 @@ That separation is statistical rather than guaranteed, because the launch token 
 What claude does when handed a session name it already holds is not established here, so a collision's consequence is unmeasured rather than known to be harmless.
 The task id is capped at 32 characters and the home basename at 12, which bounds the whole name at 52.
 The accepted cost of that simpler shape is that two homes whose directory basenames are identical show the same home part, so their names differ only by the launch token, which leaves that token as the sole discriminator between them; they are also less visually distinct.
+On a host carrying neither `shasum` nor `sha256sum`, the token falls back to the tail of the sanitized `spawn_gen` instead of a digest, which is still per-launch, because a cosmetic name must never fail a spawn.
 
 Only claude receives the flag, and only a claude that advertises it.
 `fm-spawn.sh` reads the installed binary's own `--help` before typing the option, because claude refuses an unknown option outright rather than ignoring it, so a claude predating Remote Control would otherwise fail every launch instead of merely missing a feature.
@@ -831,6 +832,7 @@ FM_CONFIG_OVERRIDE=      # alternate config dir, mainly for tests
 FM_PROC_ROOT_OVERRIDE=   # alternate /proc root for Linux process-identity reads in fm-wake-lib.sh and fm-teardown.sh, mainly for tests
 FM_BACKEND=             # optional runtime backend override for new spawns; tmux/herdr/zellij/orca/cmux support ship/scout spawns, codex-app is not accepted
 FM_TRACE_CONTEXT=       # optional trace-context override; see "Trace context propagation"
+FM_CLAUDE_PROBE_TIMEOUT=10   # seconds bounding fm-spawn's claude --help Remote Control capability probe; hitting the bound suppresses the flag for that spawn only and caches nothing; invalid or zero values use 10 (see "Crewmate Remote Control")
 HERDR_SESSION=default  # herdr-only: named session for normal backend ops; not enough for destructive cleanup (docs/herdr-backend.md)
 FM_BACKEND_HERDR_SUBMIT_POLLS=6  # herdr-only: agent-state samples spread across each Enter attempt's budget when confirming a submit (docs/herdr-backend.md "Current transport behavior")
 FM_BACKEND_HERDR_SUBMIT_MIN_SLEEP=0.6  # herdr-only: minimum per-Enter confirmation budget before polling agent-state after an idle baseline
