@@ -14,12 +14,16 @@
 #      requirement there is that nothing changes rather than that one substring
 #      is absent. An unrecognized value warns and falls back to the default.
 #   3. Every LAUNCH gets its own session. The name is
-#      <task-id>.<home-basename>.<launch-token>, where the launch token is
-#      derived from this spawn's own spawn_gen incarnation token, so two launches
-#      never share a name: not two homes spawning one task id, not two tasks in
-#      one home, and not a relaunch of the same task (which
-#      tests/fm-control-relaunch.test.sh owns end to end). The task id and the
-#      basename are capped, bounding the whole name at 52 characters. The name is
+#      <task-id>.<home-basename>.<launch-token>, where the launch token is six
+#      hex characters of the sha256 of this spawn's own spawn_gen incarnation
+#      token, so two launches are separated in practice: two homes spawning one
+#      task id, two tasks in one home, and a relaunch of the same task (which
+#      tests/fm-control-relaunch.test.sh owns end to end). That separation is
+#      statistical rather than guaranteed - six hex characters is 24 bits, so
+#      two launches sharing the first two fields collide when their tokens do,
+#      which is practically impossible rather than impossible at the scale one
+#      home relaunches one task id. The task id is capped at 32 and the
+#      basename at 12, bounding the whole name at 52 characters. The name is
 #      passed EXPLICITLY and before the positional brief prompt, so the
 #      optional-argument form of that flag cannot swallow the brief.
 #   4. Only claude. Every other verified adapter launches with no flag at all,

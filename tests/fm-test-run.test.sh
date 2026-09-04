@@ -823,8 +823,10 @@ test_coverage_guard_is_locale_stable() {
 
   # LC_ALL is deliberately UNSET so the locale reaches the guard through LANG,
   # which is what makes `local LC_ALL=C` alone insufficient inside the guard.
+  set +e
   out=$(env -u LC_ALL LANG="$found" LC_COLLATE="$found" "$RUNNER" --check-coverage 2>&1)
   status=$?
+  set -e
   expect_code 0 "$status" "coverage guard must succeed under LANG=$found with LC_ALL unset"$'\n'"$out"
   assert_contains "$out" "FM_TEST_COVERAGE ok" \
     "coverage guard must report success under LANG=$found"

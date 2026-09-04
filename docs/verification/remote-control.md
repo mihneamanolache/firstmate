@@ -184,6 +184,8 @@ The pane stayed an ordinary interactive TUI, matching the run A observations:
 Runs A and B predate 124 commits of upstream change to `bin/fm-spawn.sh`, including two that touch this exact launch: the claude template gained the `/bug` feedback-draft controls, and a no-mistakes ship is now delivered a rendered `launch-brief.md` rather than its `brief.md`.
 Run C re-established, on claude `2.1.260`, that the flag still lands correctly inside that changed template.
 
+Verbatim output of run C as it stood when it was captured:
+
 ```
 $ FM_CREW_REMOTE_CONTROL_LIVE=1 bash tests/fm-crew-remote-control-live-e2e.test.sh
 # subject: claude 2.1.260 (Claude Code) at /home/tavi/.local/bin/claude
@@ -191,6 +193,8 @@ $ FM_CREW_REMOTE_CONTROL_LIVE=1 bash tests/fm-crew-remote-control-live-e2e.test.
 ok - claude 2.1.260 (Claude Code) advertises --remote-control and firstmate types it with a per-launch name
 # all fm-crew-remote-control-live-e2e checks passed
 ```
+
+A re-run will differ in shape rather than reproduce these bytes: `a0671e8` changed the `# subject:` line to also name the bounded-runner mechanism the probe resolved, and the session name's launch token is per-launch by construction.
 
 Two paths around the launch also changed after the flag was designed, and run C establishes that Remote Control leaves both intact rather than assuming it:
 
@@ -223,7 +227,7 @@ Re-run the deterministic half with:
 bash tests/fm-crew-remote-control.test.sh
 ```
 
-That suite drives the real `bin/fm-spawn.sh` and pins the launch command for the default claude crewmate and scout, an explicit `off`, an explicit `on`, an unrecognized value, the composed session name and its caps, every capability-probe direction including which verdicts are cached, codex, opencode, grok, pi, and cursor, a raw launch command, and a secondmate launch.
+That suite drives the real `bin/fm-spawn.sh` and pins the launch command for the default claude crewmate and scout, an explicit `off`, an explicit `on`, an unrecognized value, the composed session name and its caps, every capability-probe direction including which verdicts are cached, codex, opencode, grok, pi, cursor, and gemini, a raw launch command, and a secondmate launch.
 kimi and muse are the two verified adapters it does not cover, because both need a real installed binary - and muse a stored credential - to reach their launch step; neither carries the placeholder, which is the structural reason no adapter but claude can receive the flag.
 `tests/fm-control-relaunch.test.sh` owns the matching relaunch case, because re-resolving the knob on every relaunch, and starting a new session rather than reusing the previous name, are properties of the relaunch path rather than of the knob.
 Neither needs a claude binary or a credential, so CI enforces both everywhere.
