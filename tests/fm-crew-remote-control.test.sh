@@ -844,6 +844,58 @@ test_a_symlinked_probe_cache_is_neither_followed_nor_written_through() {
   pass "probe: a symlinked cache is neither followed nor written through"
 }
 
+# A symlink to a DIRECTORY is the case a plain rename does not close: the
+# destination resolves through the link, so the temp file lands inside the linked
+# directory instead of replacing the link, once per spawn forever and outside
+# $STATE. An ordinary directory sitting on the cache path strands the write the
+# same way. Both must resolve to "not cached" with nothing written anywhere but
+# $STATE, and neither may cost the spawn its flag.
+test_an_unusable_probe_cache_path_strands_no_write_outside_state() {
+  local rec id_a id_b id_c cache linked launch probes strays
+  id_a=rc-dirlink-g13
+  id_b=rc-dirlink-g14
+  id_c=rc-dirlink-g15
+  rec=$(make_spawn_case rc-dirlink claude - "$id_a" "$id_b" "$id_c")
+  read_case_record "$rec"
+  FM_FAKE_CLAUDE_PROBE_LOG="$CASE_DIR/probe.log"
+  : > "$FM_FAKE_CLAUDE_PROBE_LOG"
+  cache="$HOME_DIR/state/.claude-remote-control-probe"
+  linked="$CASE_DIR/linked-dir"
+  mkdir -p "$linked" "$HOME_DIR/state"
+  ln -s "$linked" "$cache"
+
+  run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id_a" "$PROJ_DIR" >/dev/null
+  launch=$(cat "$LAUNCH_LOG")
+  assert_contains "$launch" "--remote-control '$(expected_rc_name "$HOME_DIR" "$id_a")'" \
+    "a cache path pointing at a directory must still leave a working Remote Control launch"
+  strays=$(find "$linked" -mindepth 1 | wc -l)
+  [ "$strays" -eq 0 ] \
+    || fail "the cache write followed a directory symlink and left $strays file(s) in $linked"
+  [ ! -L "$cache" ] || fail "the spawn must drop the directory symlink rather than write through it"
+
+  # The link is gone, so the cache establishes normally and the next spawn is
+  # served from it - the recovery half of "never fail, never write astray".
+  run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id_b" "$PROJ_DIR" >/dev/null
+  probes=$(grep -c . "$FM_FAKE_CLAUDE_PROBE_LOG")
+  [ "$probes" -eq 1 ] \
+    || fail "the cache should have established after the symlink was dropped, probed $probes times"
+
+  # An ordinary directory on the cache path is never removed, so this home simply
+  # never caches: the flag still lands and $STATE gains no leftover temp file.
+  rm -f "$cache"
+  mkdir -p "$cache"
+  run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id_c" "$PROJ_DIR" >/dev/null
+  launch=$(cat "$LAUNCH_LOG")
+  assert_contains "$launch" "--remote-control '$(expected_rc_name "$HOME_DIR" "$id_c")'" \
+    "a directory on the cache path must still leave a working Remote Control launch"
+  strays=$(find "$cache" -mindepth 1 | wc -l)
+  [ "$strays" -eq 0 ] || fail "the cache write left $strays file(s) inside the directory at $cache"
+  strays=$(find "$HOME_DIR/state" -maxdepth 1 -name '.claude-remote-control-probe.*' | wc -l)
+  [ "$strays" -eq 0 ] || fail "a stranded cache write left $strays temp file(s) behind in $HOME_DIR/state"
+  unset FM_FAKE_CLAUDE_PROBE_LOG
+  pass "probe: an unusable cache path caches nothing and writes nothing outside \$STATE"
+}
+
 # --- 4. every other harness is untouched -------------------------------------
 
 # One row per verified non-claude crewmate adapter, with the knob ABSENT, so the
@@ -1054,6 +1106,7 @@ test_a_transient_probe_failure_is_not_cached
 test_a_probe_that_hits_the_bound_is_not_cached
 test_a_durable_probe_verdict_is_cached
 test_a_symlinked_probe_cache_is_neither_followed_nor_written_through
+test_an_unusable_probe_cache_path_strands_no_write_outside_state
 test_default_never_touches_another_harness
 test_default_never_rewrites_a_raw_launch_command
 test_default_never_reaches_a_secondmate_launch

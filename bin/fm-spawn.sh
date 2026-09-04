@@ -1824,7 +1824,10 @@ claude_remote_control_support() {
     tmp="$STATE/$FM_CLAUDE_REMOTE_CONTROL_PROBE_CACHE.${BASHPID:-$$}"
     rm -f "$tmp" 2>/dev/null || true
     if printf 'v1 %s %s\n' "$fingerprint" "$verdict" > "$tmp" 2>/dev/null; then
-      mv -f "$tmp" "$cache" 2>/dev/null || rm -f "$tmp" 2>/dev/null || true
+      [ ! -L "$cache" ] || rm -f "$cache" 2>/dev/null || true
+      if [ -d "$cache" ] || ! mv -f "$tmp" "$cache" 2>/dev/null; then
+        rm -f "$tmp" 2>/dev/null || true
+      fi
     else
       rm -f "$tmp" 2>/dev/null || true
     fi

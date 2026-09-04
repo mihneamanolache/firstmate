@@ -40,16 +40,18 @@ On that evidence the prefix is a weaker carrier for this purpose rather than a b
 ## The launch command
 
 Captured from a real `bin/fm-spawn.sh` ship spawn against the installed claude, through the fake-tmux `send-keys -l` capture that [`tests/fm-crew-remote-control.test.sh`](../../tests/fm-crew-remote-control.test.sh) uses, with the home and repo paths substituted for readability.
-These are run C's bytes, so they carry the launch template as it stands: the prompt-suggestion and feedback-draft controls, the permission flag, and the rendered `launch-brief.md` a no-mistakes ship is delivered.
+These are run C's bytes, re-captured against this branch's head so they carry the launch template as it stands: the sibling-harness environment unsets, the prompt-suggestion and feedback-draft controls, the permission flag, and the rendered `launch-brief.md` a no-mistakes ship is delivered.
 A scout is delivered its `brief.md` instead; nothing else about the line differs.
 
 ```
 --- config/crew-remote-control absent, or = on ---
-env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{"feedbackDrafts":"off"}' --remote-control 'dump-1.home.678d2b' "$('<firstmate>/bin/fm-operational-input.sh' encode launch-brief < '<home>/data/dump-1/launch-brief.md')"
+env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{"feedbackDrafts":"off"}' --remote-control 'rc-live-guard.home.21a856' "$('<firstmate>/bin/fm-operational-input.sh' encode launch-brief < '<home>/data/rc-live-guard/launch-brief.md')"
 
 --- config/crew-remote-control = off ---
-env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{"feedbackDrafts":"off"}' "$('<firstmate>/bin/fm-operational-input.sh' encode launch-brief < '<home>/data/dump-1/launch-brief.md')"
+env -u CURSOR_AGENT -u CURSOR_INVOKED_AS -u GEMINI_CLI CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-permissions --settings '{"feedbackDrafts":"off"}' "$('<firstmate>/bin/fm-operational-input.sh' encode launch-brief < '<home>/data/rc-live-guard/launch-brief.md')"
 ```
+
+`-u GEMINI_CLI` is the newest of those unsets, from the Gemini crewmate runtime this branch sits on; a capture that predates it is a capture of an older template rather than of this one.
 
 The two lines differ by exactly the flag and its name, and that whole-line equality is what the test suite pins for the opted-out launch, so a home that writes `off` provably types what firstmate types with the feature absent.
 The flag sits after every option the template already carried and before the positional brief, which is the position the suite asserts.
