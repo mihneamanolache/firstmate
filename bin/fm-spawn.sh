@@ -1679,24 +1679,29 @@ crew_remote_control_preference() {
 # in the claude.ai/code session list, shaped as
 #   <task-id>.<home-basename>.<launch-token>
 # for example rc-on-spawn.firstmate.4b1c9d.
-# Every LAUNCH gets its own name, so a relaunched worker starts a new Remote
-# Control session instead of reattaching to, resurrecting, or relabelling the one
-# its dead predecessor used: what belongs in the operator's session list is the
-# worker running now.
+# The name is derived fresh on every LAUNCH, so a relaunched worker starts a new
+# Remote Control session instead of reattaching to, resurrecting, or relabelling
+# the one its dead predecessor used: what belongs in the operator's session list
+# is the worker running now.
 # The three parts each earn their place. The task id LEADS because it is the
 # handle the operator already uses for the work, so it is what they scan for.
 # The home basename gives the home human meaning at a glance. The launch token is
-# what makes the name unique, and it is derived from SPAWN_GEN, the incarnation
-# token this spawn already computed and already records as spawn_gen= in
+# what separates one launch from another, and it is derived from SPAWN_GEN, the
+# incarnation token this spawn already computed and already records as spawn_gen= in
 # state/<id>.meta; it is regenerated on every fresh spawn AND every relaunch,
 # which is exactly the per-launch distinctness this name needs. Reusing it costs
 # no NEW clock read, randomness, or state - SPAWN_GEN itself is built from a
 # clock read and $RANDOM, and this only digests what is already there.
-# Because uniqueness now comes from the launch token, the home part no longer has
+# Because separation now comes from the launch token, the home part no longer has
 # to be collision-proof, so the home path digest that once carried it is gone.
 # The accepted cost: two homes whose directory basenames are identical now show
-# the same home part, so their names differ only by the launch token. They still
-# never collide; they are just less visually distinct.
+# the same home part, so their names differ only by the launch token, which is
+# then the sole discriminator between them; they are also less visually distinct.
+# That separation is statistical rather than guaranteed: the token is six hex
+# characters of the digest, 24 bits, so two launches sharing the first two fields
+# collide when their tokens do. At the scale one home relaunches one task id that
+# is practically impossible rather than impossible, and what claude does with a
+# name it already holds is not established here.
 # The task id is capped at FM_RC_TASK_ID_MAX and the sanitized basename at
 # FM_RC_HOME_BASENAME_MAX, which bounds the whole emitted name at 52 characters:
 # 32 + 1 + 12 + 1 + 6. A live run accepted a 138-character name, so this bound

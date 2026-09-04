@@ -30,6 +30,8 @@ fi
 
 # shellcheck source=tests/fixtures.sh
 . "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
+# shellcheck source=bin/fm-timeout-lib.sh
+. "$ROOT/bin/fm-timeout-lib.sh"
 
 SPAWN="$ROOT/bin/fm-spawn.sh"
 TMP_ROOT=$(fm_test_tmproot fm-crew-remote-control-live)
@@ -38,12 +40,18 @@ TMP_ROOT=$(fm_test_tmproot fm-crew-remote-control-live)
 # must not look like a guard that checked something.
 command -v claude >/dev/null 2>&1 \
   || fail "claude is not installed, so the installed-claude Remote Control capability was not checked at all"
-command -v timeout >/dev/null 2>&1 || command -v gtimeout >/dev/null 2>&1 \
-  || fail "no bounded runner (timeout or gtimeout) is installed, so fm-spawn cannot probe claude at all"
+# The probe bounds itself through fm_run_timed, which resolves a mechanism on
+# every host - timeout, gtimeout, perl, or its dependency-free bash fallback - so
+# what this asserts is that the library names one, not that any given binary is
+# installed. A host with neither timeout nor gtimeout still probes.
+TIMEOUT_MECHANISM=$(fm_timeout_mechanism)
+[ -n "$TIMEOUT_MECHANISM" ] \
+  || fail "bin/fm-timeout-lib.sh named no bounded-runner mechanism on this host, so the probe's bound is unaccounted for"
 
 CLAUDE_BIN=$(command -v claude)
 CLAUDE_VERSION=$(claude --version 2>&1 | head -n 1)
-printf '# subject: claude %s at %s\n' "$CLAUDE_VERSION" "$CLAUDE_BIN"
+printf '# subject: claude %s at %s (bounded by the %s mechanism)\n' \
+  "$CLAUDE_VERSION" "$CLAUDE_BIN" "$TIMEOUT_MECHANISM"
 
 HOME_DIR="$TMP_ROOT/home"
 PROJ_DIR="$TMP_ROOT/project"
