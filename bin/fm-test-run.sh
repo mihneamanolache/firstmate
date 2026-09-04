@@ -1273,8 +1273,10 @@ families_for_changed_path() {
       ;;
     bin/fm-timeout-lib.sh)
       # The shared hard bound: session start's runtime bound, the fleet/bearings
-      # snapshots, the vendor auth probe, the stow cascade's per-home step, and
-      # the wedge detector's worktree write probe all depend on it.
+      # snapshots, the vendor auth probe, the stow cascade's per-home step, the
+      # wedge detector's worktree write probe, and fm-spawn's Remote Control
+      # capability probe all depend on it.
+      printf '%s\n' backend-dispatch
       printf '%s\n' session-bootstrap
       printf '%s\n' snapshot-bearings
       printf '%s\n' pure-contract-unit

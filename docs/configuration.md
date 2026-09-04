@@ -343,11 +343,13 @@ Claude Code's Remote Control is on by default for this home's claude crewmate an
 The file being absent, being empty, or holding `on` all mean enabled, and any other value warns on stderr naming the file and the offending value before falling back to the default, so a typo is visible instead of silently deciding anything.
 
 Enabled means `fm-spawn.sh` adds `--remote-control <session-name>` to a claude crewmate or scout launch, where the session name is `<task-id>.<home-basename>.<launch-token>`, for example `rc-on-spawn.firstmate.4b1c9d`.
-Every launch gets its own name, so a relaunched worker starts a new Remote Control session instead of reattaching to the one its dead predecessor used: what belongs in the session list is the worker running now.
+The name is derived fresh on every launch, so a relaunched worker starts a new Remote Control session instead of reattaching to the one its dead predecessor used: what belongs in the session list is the worker running now.
 The task id leads because it is the handle the operator already uses for that work, the sanitized home basename gives the home human meaning, and the launch token is six hex characters of the sha256 of that spawn's own `spawn_gen` incarnation token, the value `fm-spawn.sh` already records in `state/<id>.meta` and already regenerates on every fresh spawn and every relaunch.
-What the name guarantees is this: inside one `claude.ai` account no two launches share a session name, whether they are two homes spawning the same task id, two tasks in one home, or two incarnations of one task.
+What the name separates is this: inside one `claude.ai` account, two homes spawning the same task id, two tasks in one home, and two incarnations of one task each get a different session name in practice.
+That separation is statistical rather than guaranteed, because the launch token is only six hex characters - 24 bits of the digest - so two launches sharing the first two fields collide when their tokens do; at the scale one home relaunches one task id, that is practically impossible rather than impossible.
+What claude does when handed a session name it already holds is not established here, so a collision's consequence is unmeasured rather than known to be harmless.
 The task id is capped at 32 characters and the home basename at 12, which bounds the whole name at 52.
-The accepted cost of that simpler shape is that two homes whose directory basenames are identical show the same home part, so their names differ only by the launch token; they still never collide, they are just less visually distinct.
+The accepted cost of that simpler shape is that two homes whose directory basenames are identical show the same home part, so their names differ only by the launch token, which leaves that token as the sole discriminator between them; they are also less visually distinct.
 
 Only claude receives the flag, and only a claude that advertises it.
 `fm-spawn.sh` reads the installed binary's own `--help` before typing the option, because claude refuses an unknown option outright rather than ignoring it, so a claude predating Remote Control would otherwise fail every launch instead of merely missing a feature.

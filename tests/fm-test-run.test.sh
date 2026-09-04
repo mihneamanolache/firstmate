@@ -296,6 +296,8 @@ test_changed_dependency_selection_and_unmapped_failure() {
   listed=$(cd "$repo" && bin/fm-test-run.sh --list --changed --base HEAD)
   assert_contains "$listed" "tests/fm-procevent-quota.test.sh" \
     "timeout library selects quota polling coverage"
+  assert_contains "$listed" "tests/fm-backend.test.sh" \
+    "timeout library selects the dispatch coverage that bounds a spawn's capability probe"
   git -C "$repo" add bin/fm-timeout-lib.sh
   git -C "$repo" -c user.name=test -c user.email=test@example.invalid commit -qm timeout-lib-change
 
