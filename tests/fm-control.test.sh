@@ -21,6 +21,9 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+fm_test_require_tool node 'muse session-log resolution runs through it (bin/fm-busy-lib.sh)'
+
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-control-lib.sh"
 # shellcheck source=/dev/null

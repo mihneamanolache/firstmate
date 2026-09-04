@@ -10,6 +10,8 @@ set -u
 # shellcheck source=tests/fixtures.sh
 . "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 
+fm_test_require_tool node 'claude spawn pre-registers workspace trust through it (bin/fm-claude-trust.sh)'
+
 TMP_ROOT=$(fm_test_tmproot fm-claude-trust)
 
 TRUST="$ROOT/bin/fm-claude-trust.sh"

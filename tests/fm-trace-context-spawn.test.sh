@@ -6,6 +6,9 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+fm_test_require_tool node 'claude spawn pre-registers workspace trust through it (bin/fm-claude-trust.sh)'
+
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-trace-context-lib.sh"
 

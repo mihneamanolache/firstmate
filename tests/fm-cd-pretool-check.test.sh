@@ -16,6 +16,8 @@ set -u
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+fm_test_require_tool node 'the cd guard evaluates bin/fm-cd-command-policy.mjs through it and fails open without it'
+
 fm_git_identity fmtest fmtest@example.invalid
 TMP_ROOT=$(fm_test_tmproot fm-cd-pretool-check)
 

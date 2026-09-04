@@ -65,6 +65,8 @@ set -u
 # shellcheck source=tests/fixtures.sh
 . "$(dirname "${BASH_SOURCE[0]}")/fixtures.sh"
 
+fm_test_require_tool node 'claude spawn pre-registers workspace trust through it (bin/fm-claude-trust.sh)'
+
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-config-inherit-lib.sh"
 
