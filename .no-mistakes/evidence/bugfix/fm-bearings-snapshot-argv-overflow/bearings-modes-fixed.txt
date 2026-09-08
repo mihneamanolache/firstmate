@@ -1,0 +1,200 @@
+# /bearings on a faithful rebuild of the reported home, TARGET commit 6f64ebe.
+# data/backlog.md = 131,485 bytes, 73 open captain holds with long multi-sentence
+# reasons, 3 live tasks, 1 registered local secondmate home.
+# Covers every mode's entry point: plain (TOON digest), a reduced --fields list,
+# --json (the single step file mode and lavish mode both start from), and
+# --include-prs.
+
+===== home under test =====
+FM_HOME=/tmp/fm-argv-repro/home-report
+data/backlog.md: 131485 bytes, 73 open captain holds
+tasks: 3
+
+===== /bearings (plain mode) -> bin/fm-bearings-snapshot.sh =====
+schema: fm-bearings.v1
+home: fm-argv-repro/home-report
+generated: "2026-09-08T12:00:00Z"
+prs: "not_requested (run: /bearings include PRs)"
+in_flight[3]{id,kind,state,repo,doing}:
+  scout-x,scout,done,firstmate,"report ready for the captain, the failure reproduces on every invocation"
+  ship-task,ship,working,firstmate,harness busy (claude-hook)
+  mate/mate,ship,working,firstmate,harness busy (claude-hook)
+secondmates[1]{id,state,doing,provenance,freshness,age_seconds,contradiction,reason}:
+  mate,captain_decision,Choose subscription order,structured-home,fresh,0,true,"-"
+secondmate_reconcile[1]{id,spawn_gen,host,kind,ids}:
+  mate,null,null,null,"[]"
+decisions_open[20]{id,key,verb,summary,owner}:
+  hold-01,hold-01,captain-hold,"Captain decision 01 on fleet route 01: the captain has to choose between keeping the curre…",(main)
+  hold-02,hold-02,captain-hold,"Captain decision 02 on fleet route 02: the captain has to choose between keeping the curre…",(main)
+  hold-03,hold-03,captain-hold,"Captain decision 03 on fleet route 03: the captain has to choose between keeping the curre…",(main)
+  hold-04,hold-04,captain-hold,"Captain decision 04 on fleet route 04: the captain has to choose between keeping the curre…",(main)
+  hold-05,hold-05,captain-hold,"Captain decision 05 on fleet route 05: the captain has to choose between keeping the curre…",(main)
+  hold-06,hold-06,captain-hold,"Captain decision 06 on fleet route 06: the captain has to choose between keeping the curre…",(main)
+  hold-07,hold-07,captain-hold,"Captain decision 07 on fleet route 07: the captain has to choose between keeping the curre…",(main)
+  hold-08,hold-08,captain-hold,"Captain decision 08 on fleet route 08: the captain has to choose between keeping the curre…",(main)
+  hold-09,hold-09,captain-hold,"Captain decision 09 on fleet route 09: the captain has to choose between keeping the curre…",(main)
+  hold-10,hold-10,captain-hold,"Captain decision 10 on fleet route 10: the captain has to choose between keeping the curre…",(main)
+  hold-11,hold-11,captain-hold,"Captain decision 11 on fleet route 11: the captain has to choose between keeping the curre…",(main)
+  hold-12,hold-12,captain-hold,"Captain decision 12 on fleet route 12: the captain has to choose between keeping the curre…",(main)
+  hold-13,hold-13,captain-hold,"Captain decision 13 on fleet route 13: the captain has to choose between keeping the curre…",(main)
+  hold-14,hold-14,captain-hold,"Captain decision 14 on fleet route 14: the captain has to choose between keeping the curre…",(main)
+  hold-15,hold-15,captain-hold,"Captain decision 15 on fleet route 15: the captain has to choose between keeping the curre…",(main)
+  hold-16,hold-16,captain-hold,"Captain decision 16 on fleet route 16: the captain has to choose between keeping the curre…",(main)
+  hold-17,hold-17,captain-hold,"Captain decision 17 on fleet route 17: the captain has to choose between keeping the curre…",(main)
+  hold-18,hold-18,captain-hold,"Captain decision 18 on fleet route 18: the captain has to choose between keeping the curre…",(main)
+  hold-19,hold-19,captain-hold,"Captain decision 19 on fleet route 19: the captain has to choose between keeping the curre…",(main)
+  hold-20,hold-20,captain-hold,"Captain decision 20 on fleet route 20: the captain has to choose between keeping the curre…",(main)
+landed[6]{id,what,artifact,owner}:
+  done-083,Landed fleet work 083,"https://github.com/kunchenguid/firstmate/pull/3083",(main)
+  mate-landed,Secondmate-managed fix,"https://github.com/kunchenguid/firstmate/pull/50",mate
+  done-055,Landed fleet work 055,"https://github.com/kunchenguid/firstmate/pull/3055",(main)
+  done-027,Landed fleet work 027,"https://github.com/kunchenguid/firstmate/pull/3027",(main)
+  done-082,Landed fleet work 082,"https://github.com/kunchenguid/firstmate/pull/3082",(main)
+  done-054,Landed fleet work 054,"https://github.com/kunchenguid/firstmate/pull/3054",(main)
+gates[20]{id,title,blocked_by,reason,owner}:
+  queued-001,Queued fleet work 001,ship-task,"-",(main)
+  queued-002,Queued fleet work 002,ship-task,"-",(main)
+  queued-003,Queued fleet work 003,ship-task,"-",(main)
+  queued-004,Queued fleet work 004,ship-task,"-",(main)
+  queued-005,Queued fleet work 005,ship-task,"-",(main)
+  queued-006,Queued fleet work 006,ship-task,"-",(main)
+  queued-007,Queued fleet work 007,ship-task,"-",(main)
+  queued-008,Queued fleet work 008,ship-task,"-",(main)
+  queued-009,Queued fleet work 009,ship-task,"-",(main)
+  queued-010,Queued fleet work 010,ship-task,"-",(main)
+  queued-011,Queued fleet work 011,ship-task,"-",(main)
+  queued-012,Queued fleet work 012,ship-task,"-",(main)
+  queued-013,Queued fleet work 013,ship-task,"-",(main)
+  queued-014,Queued fleet work 014,ship-task,"-",(main)
+  queued-015,Queued fleet work 015,ship-task,"-",(main)
+  queued-016,Queued fleet work 016,ship-task,"-",(main)
+  queued-017,Queued fleet work 017,ship-task,"-",(main)
+  queued-018,Queued fleet work 018,ship-task,"-",(main)
+  queued-019,Queued fleet work 019,ship-task,"-",(main)
+  queued-020,Queued fleet work 020,ship-task,"-",(main)
+reports[1]{id,path}:
+  scout-x,/tmp/fm-argv-repro/home-report/data/scout-x/report.md
+recorded_prs[1]{id,url}:
+  ship-task,"https://github.com/kunchenguid/firstmate/pull/9"
+unhealthy_endpoints[1]{id,backend,target,exists,agent}:
+  mate,tmux,"firstmate:fm-mate",true,dead
+omitted[10]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  landed showing 6 of 7 (incl. 1 secondmate home(s)),"--all-landed"
+  landed per-home capped at 6 for 1 home(s),"--all-landed"
+  decisions_open showing 20 of 74,"--all-decisions"
+  gates showing 20 of 90,"--all-queued"
+  live PR discovery + checks,"--include-prs"
+exit=0
+
+===== /bearings with a reduced --fields list =====
+schema: fm-bearings.v1
+home: fm-argv-repro/home-report
+generated: "2026-09-08T12:00:00Z"
+prs: "not_requested (run: /bearings include PRs)"
+in_flight[3]{id,kind,state,repo,doing}:
+  scout-x,scout,done,firstmate,"report ready for the captain, the failure reproduces on every invocation"
+  ship-task,ship,working,firstmate,harness busy (claude-hook)
+  mate/mate,ship,working,firstmate,harness busy (claude-hook)
+secondmates[1]{id,state,doing,provenance,freshness,age_seconds,contradiction,reason}:
+  mate,captain_decision,Choose subscription order,structured-home,fresh,0,true,"-"
+secondmate_reconcile[1]{id,spawn_gen,host,kind,ids}:
+  mate,null,null,null,"[]"
+decisions_open[20]{id,key,verb,summary,owner}:
+  hold-01,hold-01,captain-hold,"Captain decision 01 on fleet route 01: the captain has to choose between keeping the curre…",(main)
+  hold-02,hold-02,captain-hold,"Captain decision 02 on fleet route 02: the captain has to choose between keeping the curre…",(main)
+  hold-03,hold-03,captain-hold,"Captain decision 03 on fleet route 03: the captain has to choose between keeping the curre…",(main)
+  hold-04,hold-04,captain-hold,"Captain decision 04 on fleet route 04: the captain has to choose between keeping the curre…",(main)
+  hold-05,hold-05,captain-hold,"Captain decision 05 on fleet route 05: the captain has to choose between keeping the curre…",(main)
+  hold-06,hold-06,captain-hold,"Captain decision 06 on fleet route 06: the captain has to choose between keeping the curre…",(main)
+  hold-07,hold-07,captain-hold,"Captain decision 07 on fleet route 07: the captain has to choose between keeping the curre…",(main)
+  hold-08,hold-08,captain-hold,"Captain decision 08 on fleet route 08: the captain has to choose between keeping the curre…",(main)
+  hold-09,hold-09,captain-hold,"Captain decision 09 on fleet route 09: the captain has to choose between keeping the curre…",(main)
+  hold-10,hold-10,captain-hold,"Captain decision 10 on fleet route 10: the captain has to choose between keeping the curre…",(main)
+  hold-11,hold-11,captain-hold,"Captain decision 11 on fleet route 11: the captain has to choose between keeping the curre…",(main)
+  hold-12,hold-12,captain-hold,"Captain decision 12 on fleet route 12: the captain has to choose between keeping the curre…",(main)
+  hold-13,hold-13,captain-hold,"Captain decision 13 on fleet route 13: the captain has to choose between keeping the curre…",(main)
+  hold-14,hold-14,captain-hold,"Captain decision 14 on fleet route 14: the captain has to choose between keeping the curre…",(main)
+  hold-15,hold-15,captain-hold,"Captain decision 15 on fleet route 15: the captain has to choose between keeping the curre…",(main)
+  hold-16,hold-16,captain-hold,"Captain decision 16 on fleet route 16: the captain has to choose between keeping the curre…",(main)
+  hold-17,hold-17,captain-hold,"Captain decision 17 on fleet route 17: the captain has to choose between keeping the curre…",(main)
+  hold-18,hold-18,captain-hold,"Captain decision 18 on fleet route 18: the captain has to choose between keeping the curre…",(main)
+  hold-19,hold-19,captain-hold,"Captain decision 19 on fleet route 19: the captain has to choose between keeping the curre…",(main)
+  hold-20,hold-20,captain-hold,"Captain decision 20 on fleet route 20: the captain has to choose between keeping the curre…",(main)
+landed[6]{id,what,artifact,owner}:
+  done-083,Landed fleet work 083,"https://github.com/kunchenguid/firstmate/pull/3083",(main)
+  mate-landed,Secondmate-managed fix,"https://github.com/kunchenguid/firstmate/pull/50",mate
+  done-055,Landed fleet work 055,"https://github.com/kunchenguid/firstmate/pull/3055",(main)
+  done-027,Landed fleet work 027,"https://github.com/kunchenguid/firstmate/pull/3027",(main)
+  done-082,Landed fleet work 082,"https://github.com/kunchenguid/firstmate/pull/3082",(main)
+  done-054,Landed fleet work 054,"https://github.com/kunchenguid/firstmate/pull/3054",(main)
+gates[20]{id,title,blocked_by,reason,owner}:
+  queued-001,Queued fleet work 001,ship-task,"-",(main)
+  queued-002,Queued fleet work 002,ship-task,"-",(main)
+  queued-003,Queued fleet work 003,ship-task,"-",(main)
+  queued-004,Queued fleet work 004,ship-task,"-",(main)
+  queued-005,Queued fleet work 005,ship-task,"-",(main)
+  queued-006,Queued fleet work 006,ship-task,"-",(main)
+  queued-007,Queued fleet work 007,ship-task,"-",(main)
+  queued-008,Queued fleet work 008,ship-task,"-",(main)
+  queued-009,Queued fleet work 009,ship-task,"-",(main)
+  queued-010,Queued fleet work 010,ship-task,"-",(main)
+  queued-011,Queued fleet work 011,ship-task,"-",(main)
+  queued-012,Queued fleet work 012,ship-task,"-",(main)
+  queued-013,Queued fleet work 013,ship-task,"-",(main)
+  queued-014,Queued fleet work 014,ship-task,"-",(main)
+  queued-015,Queued fleet work 015,ship-task,"-",(main)
+  queued-016,Queued fleet work 016,ship-task,"-",(main)
+  queued-017,Queued fleet work 017,ship-task,"-",(main)
+  queued-018,Queued fleet work 018,ship-task,"-",(main)
+  queued-019,Queued fleet work 019,ship-task,"-",(main)
+  queued-020,Queued fleet work 020,ship-task,"-",(main)
+reports[1]{id,path}:
+  scout-x,/tmp/fm-argv-repro/home-report/data/scout-x/report.md
+recorded_prs[1]{id,url}:
+  ship-task,"https://github.com/kunchenguid/firstmate/pull/9"
+unhealthy_endpoints[1]{id,backend,target,exists,agent}:
+  mate,tmux,"firstmate:fm-mate",true,dead
+omitted[10]{surface,reveal}:
+  backlog item bodies,"--fields bodies"
+  task paths,"--fields paths"
+  watch/steer actions,"--fields actions"
+  healthy endpoint detail,"--fields endpoints"
+  full scout-report inventory,"--all-reports"
+  landed showing 6 of 7 (incl. 1 secondmate home(s)),"--all-landed"
+  landed per-home capped at 6 for 1 home(s),"--all-landed"
+  decisions_open showing 20 of 74,"--all-decisions"
+  gates showing 20 of 90,"--all-queued"
+  live PR discovery + checks,"--include-prs"
+exit=0
+
+===== /bearings file + lavish mode step 1 -> bin/fm-bearings-snapshot.sh --json =====
+exit=0 bytes=11290
+{
+  "schema": "fm-bearings.v1",
+  "home": "fm-argv-repro/home-report",
+  "in_flight": 3,
+  "decisions_open": 20,
+  "gates": 20,
+  "landed": 6,
+  "reports": 1,
+  "secondmates": 1,
+  "omitted": 10
+}
+first three Captain's Call rows:
+{"id":"hold-01","key":"hold-01","verb":"captain-hold","summary":"Captain decision 01 on fleet route 01: the captain has to choose between keeping the curre…","owner":"(main)"}
+{"id":"hold-02","key":"hold-02","verb":"captain-hold","summary":"Captain decision 02 on fleet route 02: the captain has to choose between keeping the curre…","owner":"(main)"}
+{"id":"hold-03","key":"hold-03","verb":"captain-hold","summary":"Captain decision 03 on fleet route 03: the captain has to choose between keeping the curre…","owner":"(main)"}
+secondmate row:
+{"id":"mate","state":"captain_decision","doing":"Choose subscription order","provenance":"structured-home","freshness":"fresh","age_seconds":0,"contradiction":true,"reason":"-"}
+
+===== /bearings include PRs -> bin/fm-bearings-snapshot.sh --include-prs --json =====
+exit=0
+{
+  "prs": "checked (1 repos, 60 open)",
+  "candidate_prs": 60
+}

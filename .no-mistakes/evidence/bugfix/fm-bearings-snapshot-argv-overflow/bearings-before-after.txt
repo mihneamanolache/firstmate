@@ -1,0 +1,87 @@
+=======================================================================
+/bearings argv-overflow reproduction - BEFORE (base b84e0e3) vs AFTER (target 6f64ebe)
+Reproduced on Linux (MAX_ARG_STRLEN = 131072 bytes per single argument).
+Every home below is a real FM_HOME on disk: data/backlog.md is 131,485 bytes
+carrying 73 open captain holds with long multi-sentence reasons, plus live
+crewmate metas/status logs and one registered local secondmate home.
+=======================================================================
+
+=======================================================================
+SCENARIO A - "/bearings include PRs" over a 31-repo fleet home
+  Documented expansion only: --include-prs --all-pr-repos, default
+  FM_BEARINGS_PR_LIMIT=20, 20 open PRs per repo.
+=======================================================================
+--- BEFORE (base b84e0e3) ---
+$ bin/fm-bearings-snapshot.sh --include-prs --all-pr-repos --json
+  /tmp/fm-argv-repro/base/bin/fm-bearings-snapshot.sh: line 279: /usr/bin/jq: Argument list too long
+  jq: invalid JSON text passed to --argjson
+  Use jq --help for help with command-line options,
+  or see the jq manpage, or online docs  at https://jqlang.github.io/jq
+  jq: invalid JSON text passed to --argjson
+  exit: 1   stdout bytes: 0   -> the captain gets no fleet state at all
+
+--- AFTER (target 6f64ebe) ---
+$ bin/fm-bearings-snapshot.sh --include-prs --all-pr-repos --json
+  stderr: (empty)
+  exit: 0
+  {"prs":"checked (31 repos, 620 open)","candidate_prs":620,"first_row":{"num":"1","repo":"kunchenguid/service-1","task":"fleet-transport-1","url":"https://github.com/kunchenguid/firstmate/pull/1","review":"","mergeable":"MERGEABLE","checks":"passing"},"last_row":{"num":"20","repo":"kunchenguid/firstmate","task":"fleet-transport-20","url":"https://github.com/kunchenguid/firstmate/pull/20","review":"","mergeable":"MERGEABLE","checks":"passing"}}
+
+=======================================================================
+SCENARIO C - plain "/bearings" in a home with a parked crewmate that has
+  accumulated 520 keyed open captain decisions (state/ship-parked.status
+  is 124 KB; its open-decision component serializes to ~137 KB).
+  This is the silent-loss case: exit 0, but the crewmate waiting on the
+  captain disappears from the captain-facing Underway section.
+=======================================================================
+--- BEFORE (base b84e0e3) ---
+$ bin/fm-bearings-snapshot.sh --fields home,in_flight,decisions_open
+  stderr: /tmp/fm-argv-repro/base/bin/fm-fleet-snapshot.sh: line 802: /usr/bin/jq: Argument list too long
+  exit: 0
+  in_flight[3]{id,kind,state,repo,doing}:
+    scout-x,scout,done,firstmate,"report ready for the captain, the failure reproduces on every invocation"
+    ship-task,ship,working,firstmate,harness busy (claude-hook)
+    mate/mate,ship,working,firstmate,harness busy (claude-hook)
+  secondmates[1]{id,state,doing,provenance,freshness,age_seconds,contradiction,reason}:
+
+--- AFTER (target 6f64ebe) ---
+$ bin/fm-bearings-snapshot.sh --fields home,in_flight,decisions_open
+  stderr: (empty)
+  exit: 0
+  in_flight[4]{id,kind,state,repo,doing}:
+    scout-x,scout,done,firstmate,"report ready for the captain, the failure reproduces on every invocation"
+    ship-parked,ship,paused,firstmate,parked waiting on the captain to pick a route
+    ship-task,ship,working,firstmate,harness busy (claude-hook)
+    mate/mate,ship,working,firstmate,harness busy (claude-hook)
+
+=======================================================================
+SCENARIO B - the same class on the deterministic fleet-state source the
+  bearings skill mandates: a persistent secondmate stream carrying 401
+  keyed open captain decisions (state/mate.status is 122 KB).
+=======================================================================
+--- BEFORE (base b84e0e3) ---
+$ bin/fm-fleet-snapshot.sh --json
+  stderr: /tmp/fm-argv-repro/base/bin/fm-fleet-snapshot.sh: line 802: /usr/bin/jq: Argument list too long
+  exit: 0
+  tasks[] inventory: scout-x, ship-task
+  task "mate" open captain decisions: TASK MISSING FROM INVENTORY
+
+--- AFTER (target 6f64ebe) ---
+$ bin/fm-fleet-snapshot.sh --json
+  stderr: (empty)
+  exit: 0
+  tasks[] inventory: mate, scout-x, ship-task
+  task "mate" open captain decisions: 401
+
+=======================================================================
+REGRESSION TESTS - tests/fm-bearings-snapshot.test.sh (the 4 cases this
+  change adds), run against the BASE scripts and the TARGET scripts.
+=======================================================================
+  base b84e0e3   not ok - large candidate PR fixture did not exceed the per-argument limit
+  base b84e0e3   not ok - large task-decision component did not exceed the per-argument limit
+  base b84e0e3   not ok - a failed task component published an exit-0 snapshot
+  base b84e0e3   not ok - a failed scout-report record published an exit-0 snapshot
+
+  target 6f64ebe ok - large candidate PR inventories avoid argument transport
+  target 6f64ebe ok - large task-decision inventories avoid argument transport
+  target 6f64ebe ok - a failed per-task component fails the snapshot instead of dropping tasks
+  target 6f64ebe ok - a failed scout-report record fails the snapshot instead of dropping reports
