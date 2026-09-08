@@ -1,0 +1,22 @@
+==============================================================
+ firstmate supervision transcript - AFTER FIX (16965e6) - safety check B: declaration standing, agent behind it GONE bin/fm-watch.sh
+ worker: fm-orphan-task-detection-20260908
+ mode:   dead-agent (pane command: zsh)
+ pane:   NON-BUSY (turn finished, monitor armed)
+ status: paused: [key=nm-review-fix] waiting on the no-mistakes review fix round, monitor armed
+ crew-state: state: working · source: run-step · validating (running)
+ cadence: STALE_ESCALATE_SECS=240  PAUSE_RESURFACE_SECS=3600
+==============================================================
+round 1  (t+   0s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 2  (t+ 250s of the wait)
+  WOKE FIRSTMATE -> a supervision turn spent draining, inspecting, acknowledging:
+      stale: master:fm-fm-orphan-task-detection-20260908 (idle 262s, possible wedge, escalation 1)
+round 3  (t+ 500s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 4  (t+ 750s of the wait)
+  WOKE FIRSTMATE -> a supervision turn spent draining, inspecting, acknowledging:
+      stale: master:fm-fm-orphan-task-detection-20260908 (idle 261s, possible wedge, escalation 2)
+--------------------------------------------------------------
+ RESULT: firstmate woken 2 time(s) in 16 simulated minutes; 2 of those were "possible wedge" alarms
+--------------------------------------------------------------

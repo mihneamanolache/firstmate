@@ -1,0 +1,29 @@
+==============================================================
+ firstmate supervision transcript - AFTER FIX (16965e6) - the 2026-09-08 incident fixture bin/fm-watch.sh
+ worker: fm-orphan-task-detection-20260908
+ mode:   declared (pane command: claude)
+ pane:   NON-BUSY (turn finished, monitor armed)
+ status: paused: [key=nm-review-fix] waiting on the no-mistakes review fix round, monitor armed
+ crew-state: state: working · source: run-step · validating (running)
+ cadence: STALE_ESCALATE_SECS=240  PAUSE_RESURFACE_SECS=3600
+==============================================================
+round 1  (t+   0s of the wait)
+  WOKE FIRSTMATE -> a supervision turn spent draining, inspecting, acknowledging:
+      stale: master:fm-fm-orphan-task-detection-20260908
+round 2  (t+ 250s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 3  (t+ 500s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 4  (t+ 750s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 5  (t+1000s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 6  (t+1250s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 7  (t+1500s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+round 8  (t+1750s of the wait)
+  quiet - stayed in the poll loop, absorbed in bash, firstmate not woken
+--------------------------------------------------------------
+ RESULT: firstmate woken 1 time(s) in 33 simulated minutes; 0 of those were "possible wedge" alarms
+--------------------------------------------------------------
