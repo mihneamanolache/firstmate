@@ -1,0 +1,14 @@
+$ fm-captain-hold.sh hold gmaps-brasil-wave-yield --reason parked   # no --until
+exit=0
+$ fm-captain-hold.sh open gmaps-brasil-wave-yield --deferred
+exit=1  (1 = not deferred, recheck rings)
+$ fm-captain-hold.sh hold gmaps-brasil-wave-yield --reason parked --until 2026-09-30
+exit=0
+$ fm-captain-hold.sh open gmaps-brasil-wave-yield --deferred
+exit=0  (0 = deferred, recheck silent until 2026-09-30)
+$ fm-captain-hold.sh open gmaps-brasil-wave-yield   # plain open still reports the call open
+exit=0
+$ fm-captain-hold.sh hold gmaps-brasil-wave-yield --reason parked --until 2026-09-24   # today: date gate lapsed
+exit=0
+$ fm-captain-hold.sh open gmaps-brasil-wave-yield --deferred
+exit=1  (1 = lapsed, recheck resumes)

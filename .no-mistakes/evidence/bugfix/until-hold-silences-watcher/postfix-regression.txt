@@ -1,0 +1,3 @@
+### POST-FIX (HEAD 2847535)
+ok - a captain hold deferred with --until stays silent until its date, then the recheck resumes
+ok - away mode keeps a captain call deferred with --until silent until its date, then re-surfaces it

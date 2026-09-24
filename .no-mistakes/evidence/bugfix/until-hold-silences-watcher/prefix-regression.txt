@@ -1,0 +1,3 @@
+### PRE-FIX (bin/ at 7aafcfa)
+not ok - a hold deferred to 2999-01-01 still re-rang the watcher: 1790257485	2	stale	test:fm-held-merge	stale: test:fm-held-merge (captain-held 5006s, awaiting the captain - verified hold transfer, rechecked on a long cadence not a wedge; answer the held decision or release the hold)
+not ok - a captain call deferred until 2999-01-01 re-surfaced in away mode: captain-held 5000s (awaiting the captain, answer the held decision or release the hold): sess:fm-held-w15h
