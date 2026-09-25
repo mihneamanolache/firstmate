@@ -1,0 +1,5 @@
+ok - a captain hold deferred with --until stays silent until its date, then the recheck resumes
+
+real	1m11.775s
+user	0m16.369s
+sys	0m41.236s

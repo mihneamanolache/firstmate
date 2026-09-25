@@ -1,0 +1,21 @@
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh hold gmaps-brasil-wave-yield --reason parked by the captain
+gmaps-brasil-wave-yield
+exit=0
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh open gmaps-brasil-wave-yield --deferred
+exit=1
+# plain hold -> not deferred (1): watcher keeps hourly recheck
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh hold gmaps-brasil-wave-yield --reason parked by the captain --until 2026-09-30
+gmaps-brasil-wave-yield
+exit=0
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh open gmaps-brasil-wave-yield --deferred
+exit=0
+# --until 2026-09-30 (today 2026-09-25) -> deferred (0): recheck silent
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh hold gmaps-brasil-wave-yield --reason parked by the captain --until 2026-09-25
+gmaps-brasil-wave-yield
+exit=0
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh open gmaps-brasil-wave-yield --deferred
+exit=1
+# --until today -> lapsed (1): recheck resumes
+$ /home/tavi/.no-mistakes/worktrees/28f6a8cebf51/01M3BJ2Y1ZFR4V86NHAQ81QTBG/bin/fm-captain-hold.sh open gmaps-brasil-wave-yield
+exit=0
+# plain open still 0 for lapsed-date call

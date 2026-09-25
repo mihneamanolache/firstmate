@@ -1,0 +1,5 @@
+ok - away mode keeps a captain call deferred with --until silent until its date, then re-surfaces it
+
+real	0m4.961s
+user	0m3.099s
+sys	0m2.811s
