@@ -1,0 +1,1 @@
+not ok - an elapsed until spent 6 current-state reads over four polls instead of at most one per escalate window

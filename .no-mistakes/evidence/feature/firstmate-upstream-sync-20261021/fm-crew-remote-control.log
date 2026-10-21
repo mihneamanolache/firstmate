@@ -1,0 +1,27 @@
+ok - default: a claude crewmate launches with --remote-control and a per-launch name
+ok - default: a claude scout launches with Remote Control the same way
+ok - default: an explicit session name separates the flag from the positional brief
+ok - default: the flag composes with --model and --effort
+ok - the session name is qualified by the home, so one task id in two homes yields two names
+ok - every launch gets its own session name, tied to that launch's spawn_gen
+ok - the task-id and home-basename caps hold, so the emitted name stays bounded (2 cases)
+ok - off: the claude launch carries no Remote Control flag and is unchanged
+ok - off: a claude scout launch is unchanged
+ok - off: case and surrounding whitespace do not change the verdict (2 spellings)
+ok - on: an explicit, upper-case, or empty value all keep Remote Control on (3 values)
+ok - unrecognized value: warns naming the file and the value, and still launches on the default
+ok - probe: a claude without the option launches byte-identically to the pre-feature launch
+ok - probe: --remote-control-session-name-prefix alone is not read as support
+ok - probe: a failing probe launches without the flag and never fails a spawn (3 failure modes)
+ok - probe: the verdict is cached per binary and re-derived when the binary changes
+ok - probe: the bound comes from the shared runner, so no timeout binary is required
+ok - probe: a probe that could not complete is never cached
+ok - probe: hitting the bound suppresses the flag for that spawn only
+ok - probe: a verdict about the binary is cached for the next spawn
+ok - default: no non-claude adapter's launch changes at all (6 adapters)
+ok - default: a raw launch command is typed unchanged
+ok - default: a claude secondmate launch is untouched
+ok - default: the launch still moves the home's backlog item to In flight
+ok - default: a Remote-Control-enabled worker is still steered by durable record plus doorbell
+ok - config/crew-remote-control is declared inheritable alongside config/crew-harness
+# all fm-crew-remote-control tests passed

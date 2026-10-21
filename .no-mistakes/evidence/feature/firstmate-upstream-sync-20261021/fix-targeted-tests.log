@@ -1,0 +1,11 @@
+ok - until set to a background job's timeout rechecks the worker paused on it once the job must have ended
+ok - without until, a worker paused on its own ended background job is not rechecked inside the cadence
+ok - a declared wait whose until time has passed is rechecked at once, then held to the cadence
+ok - a declared wait naming a near-future until time stays quiet until that time
+ok - a declared wait is not wedge-escalated by a working verdict, while an elapsed declaration and an undeclared lane both keep the unchanged ladder
+ok - an active run behind a declared wait keeps the bounded pause cadence instead of the wedge timer
+ok - a declared wait with an active run never climbs the wedge ladder, still rechecks once per window, and an undeclared pane still wedges
+ok - a declared wait whose backend reports the agent dead stays on the wedge timer and is reported as a dead agent
+ok - a mate's declared wait with an active run takes the bounded recheck instead of being silenced
+ok - a captain hold deferred with --until stays silent until its date, then the recheck resumes
+ok - a live paused worker stays absorbed until its declared time, then rechecks
