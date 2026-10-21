@@ -1345,6 +1345,24 @@ wait_record() {  # <kind> <subject> <whom> <action> <age-record>
 # `needs-decision` at all, and only in the at-threshold branch - at most once per
 # window per STALE_ESCALATE_SECS, never on an ordinary poll.
 WEDGE_BACKLOG_HOLD_KIND='captain hold'
+# A crew's own status-line declaration (a `paused:` wait or a `captain-held`
+# transfer) stops deferring the threshold once the backend confidently reports
+# no agent behind an ordinary crew: nobody is left to answer a recheck asking
+# whether the wait still holds, so the pane falls through to wedge_dead_record's
+# one-time report instead - the same rule pause_state_class applies before the
+# timer starts. A mate's endpoint liveness is never read, and every other kind
+# of wait evidence is owed by someone other than the crew, so neither is touched.
+wedge_declaration_orphaned() {  # <window> <wait-record>
+  local win=$1 kind=${2%%$'\037'*} agent_alive
+  case "$kind" in
+    'declared wait'|captain-held) ;;
+    *) return 1 ;;
+  esac
+  [ "$(window_kind "$win")" != secondmate ] || return 1
+  agent_alive=$(fm_backend_agent_alive "$(window_backend "$win")" "$win" 2>/dev/null) || return 1
+  [ "$agent_alive" = dead ]
+}
+
 wedge_wait_evidence() {  # <task> -> one wait_record on stdout
   local task=$1 last until statusf run verb
   [ -n "$task" ] || return 1
@@ -1699,6 +1717,7 @@ wedge_timer_check() {  # <window> <since-file> <triage-label> <escalation-count-
       age=$(( age - since ))
       if [ "$age" -ge "$STALE_ESCALATE_SECS" ]; then
         if evidence=$(wedge_wait_evidence "$task") &&
+           ! wedge_declaration_orphaned "$win" "$evidence" &&
            wedge_defer_wait "$win" "$since_file" "$label" "$age" "$evidence"; then
           return 0
         fi
@@ -1937,7 +1956,7 @@ clear_pause_tracking() {  # <window-key>
 # reports dead while a run step is still attributed to its code, which keeps the
 # ordinary wedge ladder. A secondmate's endpoint liveness is deliberately never read.
 pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key last recheck_file agent_alive kind
+  local win=$1 task=$2 key last recheck_file agent_alive kind until
   key=$(window_key "$win")
   last=$(status_declared_wait_line "$STATE/$task.status")
   recheck_file="$STATE/.paused-rechecked-$key"
@@ -1950,6 +1969,18 @@ pause_state_class() {  # <window> <task>
   # so a mate's stale poll costs one metadata scan rather than one per gate, and the
   # far more common no-declaration path above still costs none.
   kind=$(window_kind "$win")
+  # A `paused:` line whose own `until` time has passed no longer explains an
+  # ordinary crew's quiet, so the declaration stops outranking an authoritative
+  # active run, which goes back to the wedge timer; anything else continues below
+  # to the elapsed-declaration recheck. The crew-state read is paid only for such
+  # an elapsed declaration. A mate keeps the cadence below, because its endpoint
+  # liveness is never read and nothing else re-reads it.
+  if [ "$kind" != secondmate ] && until=$(status_paused_until "$last") && [ "$(date +%s)" -ge "$until" ] \
+    && [ "$(crew_absorb_class "$task")" = working ]; then
+    rm -f "$recheck_file"
+    printf 'working'
+    return
+  fi
   if [ -e "$STATE/.paused-$key" ] && [ "$(age_of "$recheck_file")" -lt "$STALE_ESCALATE_SECS" ]; then
     if [ "$kind" != secondmate ]; then
       agent_alive=$(fm_backend_agent_alive "$(window_backend "$win")" "$win" 2>/dev/null) || agent_alive=unknown

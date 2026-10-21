@@ -9,7 +9,7 @@ Whether the option exists is a live question too, though a narrower one: claude 
 
 ## Subjects
 
-Four live runs stand behind this record, and they establish different things.
+Five live runs stand behind this record, and they establish different things.
 
 | Run | Version | Verified | Platform | Backend | What it established |
 |---|---|---|---|---|---|
@@ -17,6 +17,7 @@ Four live runs stand behind this record, and they establish different things.
 | B | `2.1.237 (Claude Code)`, tmux `3.5a` | 2026-08-20 | Linux 6.8.0-137-generic | tmux | claude accepts a composed session name of this character class and length, on the default-on path, for two concurrent workers |
 | C | `2.1.260 (Claude Code)` | 2026-09-04 | Linux 6.8.0-137-generic | tmux | the installed claude still advertises the option, and firstmate still types it with a per-launch name, after the launch template gained the feedback-draft controls and the rendered `launch-brief.md` |
 | D | `2.1.266 (Claude Code)` | 2026-09-09 | Linux 6.8.0-137-generic | tmux | the user-scope `remoteControlAtStartup` setting does not reach an fm-spawn'd worker, so the explicit flag remains the only mechanism that makes one reachable, and the only one that can name the session |
+| E | `2.1.306 (Claude Code)` | 2026-10-21 | Linux 6.8.0-137-generic | tmux | after the upstream launch restructure (task-channel `--add-dir` grants, the task-worker `--append-system-prompt`, and the brief delivered as a record-backed doorbell), the installed claude still advertises the option and `tests/fm-crew-remote-control-live-e2e.test.sh` passed, typing `--remote-control '<task>.home.e81f35'` with a per-launch name |
 
 ```
 $ claude --version
@@ -54,6 +55,7 @@ env -u CURSOR_AGENT -u CURSOR_INVOKED_AS CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=fa
 
 The two lines differ by exactly the flag and its name, and that whole-line equality is what the test suite pins for the opted-out launch, so a home that writes `off` provably types what firstmate types with the feature absent.
 The flag sits after every option the template already carried and before the positional brief, which is the position the suite asserts.
+Since run E the positional brief is the operational-input doorbell (`': Firstmate operational input waiting: read ...'`) rather than an inline `encode launch-brief` substitution, and the flag still sits immediately before it, after the task-worker system prompt; `tests/fm-crew-remote-control.test.sh` pins that whole line.
 
 `--remote-control` takes an OPTIONAL value, so a bare flag would consume whatever token followed it - including the positional brief prompt.
 Passing an explicit name is what removes that hazard, and the ordering assertion in the test suite is what keeps it removed.

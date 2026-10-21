@@ -2267,8 +2267,10 @@ SH
   : > "$dir/fake/literal"
   run_spawn "$dir" rl60 --relaunch >/dev/null
   launched=$(cat "$dir/fake/literal")
-  assert_contains "$launched" "encode launch-brief" \
-    "the control relaunch did not launch, so its no-flag result would be vacuous"
+  assert_contains "$launched" "claude --dangerously-skip-permissions" \
+    "the control relaunch did not launch claude, so its no-flag result would be vacuous"
+  assert_contains "$launched" "Firstmate operational input waiting: read" \
+    "the control relaunch did not deliver its brief, so its no-flag result would be vacuous"
   assert_not_contains "$launched" "--remote-control" \
     "with config/crew-remote-control=off a relaunch must go back to a plain claude launch"
   pass "fm-spawn --relaunch: Remote Control is re-resolved per launch and never reuses a session name"

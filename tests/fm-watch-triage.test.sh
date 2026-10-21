@@ -3164,15 +3164,20 @@ test_wedge_threshold_defers_to_a_declared_wait_under_a_working_verdict() {
   # that file IS the record: its mtime is the moment the worker wrote the wait
   # down. So the recheck is governed by how old the declaration is, and the age
   # it publishes is that declaration's age, named as the declaration it is.
+  # A live crew's declaration under a working verdict is owned by the pause
+  # cadence before the wedge timer sees it (pause_state_class), so the recheck
+  # arrives as that cadence's declared-pause wording; either owner must publish
+  # the declaration's own age and name it as declared.
   dir=$(wedge_threshold_fixture declared-wait-aged \
     'paused: waiting on the upstream release cut' 2000)
   state="$dir/state"; fakebin="$dir/fakebin"; out="$dir/watch.out"; capture="$dir/pane.txt"
   FM_TEST_PAUSE_RESURFACE=240 wedge_threshold_round "$state" "$fakebin" "$out" "$capture" "$window" "$working" exit \
     || fail "a declaration older than the recheck cadence was never rechecked: $(cat "$out")"
   reported=$(wedge_reported_wait_secs "$out")
+  [ -n "$reported" ] || reported=$(sed -n 's/.*(paused \([0-9][0-9]*\)s, awaiting external.*/\1/p' "$out" | head -1)
   [ -n "$reported" ] && [ "$reported" -ge 1900 ] \
     || fail "the declared-wait recheck reported '${reported}'s rather than the age of the declaration itself: $(cat "$out")"
-  grep -F 'declared wait' "$out" >/dev/null \
+  grep -E 'declared (wait|pause)' "$out" >/dev/null \
     || fail "the declared-wait recheck did not name its evidence as declared: $(cat "$out")"
   # A `paused:` declaration names an external dependency the worker chose, so its
   # recheck asks the reader to confirm that dependency - never to answer or
@@ -3259,7 +3264,7 @@ test_wedge_threshold_keeps_a_wait_past_a_default_key_answer() {
 # confirm points them away from the only action that ends the wait. The sibling
 # absorber makes exactly this distinction, and a lane routed here must not lose it.
 test_wedge_threshold_recheck_names_the_captain_for_a_held_lane() {
-  local dir state fakebin out capture window key n armed_timer
+  local dir state fakebin out capture window key n armed_timer since_now
   local working='state: working · source: run-step · ci running'
 
   dir=$(wedge_threshold_fixture captain-held-wait \
@@ -3326,7 +3331,12 @@ test_wedge_threshold_recheck_names_the_captain_for_a_held_lane() {
     || fail "an away-silenced hold counted $(cat "$state/.wedge-escalations-$key") wedge escalation(s)"
   grep -F 'never rechecked while the away-posture record exists' "$state/.watch-triage.log" >/dev/null \
     || fail "the away-silenced hold was not recorded in the triage log: $(cat "$state/.watch-triage.log")"
-  [ "$(cat "$state/.stale-since-$key")" = "$armed_timer" ] \
+  # A live crew's declared hold is owned by the pause cadence before the wedge
+  # timer sees it (pause_state_class), and that cadence is anchored on the status
+  # file rather than on the idle timer, so the timer may be dropped; what must
+  # never happen is a RESTARTED timer.
+  since_now=$(cat "$state/.stale-since-$key" 2>/dev/null || true)
+  [ -z "$since_now" ] || [ "$since_now" = "$armed_timer" ] \
     || fail "an away-silenced hold restarted the idle timer, so part of the away window would be spent against the cadence the recheck owed on return uses"
 
   # And the recheck is owed in full the moment the captain is back: the absorb
@@ -5170,9 +5180,10 @@ test_declared_wait_with_an_active_run_never_climbs_the_wedge_ladder() {
 # from the authoritative read. The one record that separates them is backend
 # liveness. When the backend confidently reports NO agent behind the
 # declaration, nobody is left to answer a recheck asking whether the wait still
-# holds, so the pane must keep the ordinary wedge ladder on
-# FM_STALE_ESCALATE_SECS rather than being absorbed onto the hour-long pause
-# cadence.
+# holds, so the pane must stay on the wedge timer's FM_STALE_ESCALATE_SECS
+# threshold rather than being absorbed onto the hour-long pause cadence, and at
+# that threshold the timer's dead-agent report (wedge_dead_record) names what is
+# actually wrong instead of a recheck addressed to a crew that no longer exists.
 test_declared_wait_with_a_dead_agent_still_wedges() {
   local dir state fakebin out capture_file statusf window key pane_hash sig pid
   dir=$(make_case declared-wait-dead-agent-wedges); state="$dir/state"; fakebin="$dir/fakebin"
@@ -5203,14 +5214,14 @@ test_declared_wait_with_a_dead_agent_still_wedges() {
   pid=$!
   wait_for_exit "$pid" 100 \
     || { reap "$pid"; fail "a declared wait whose agent is dead was absorbed instead of wedge-escalating: $(cat "$out")"; }
-  grep -F "possible wedge" "$out" >/dev/null \
-    || fail "a declared wait whose agent is dead did not report a possible wedge: $(cat "$out")"
+  grep -F "agent dead" "$out" >/dev/null \
+    || fail "a declared wait whose agent is dead did not report the dead agent at the wedge threshold: $(cat "$out")"
   grep -F "awaiting external" "$state/.wake-queue" >/dev/null \
     && fail "a declared wait whose agent is dead was rechecked as a live external wait: $(cat "$state/.wake-queue")"
   [ ! -e "$state/.paused-$key" ] \
     || fail "a declared wait whose agent is dead was moved onto the bounded pause cadence"
   unset FM_FAKE_CREW_STATE
-  pass "a declared wait whose backend reports the agent dead keeps the ordinary wedge ladder"
+  pass "a declared wait whose backend reports the agent dead stays on the wedge timer and is reported as a dead agent"
 }
 
 # The kind=secondmate variant of the same reconciliation. A mate's endpoint
