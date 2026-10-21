@@ -7467,7 +7467,7 @@ test_paused_bg_job_without_until_stays_silent_after_the_job_ends() {
 }
 
 test_paused_bg_job_until_timeout_rechecks_after_the_job_ends() {
-  local dir state started
+  local dir state started reads
   started=$(date +%s)
   dir=$(bg_job_paused_case bg-job-until-running \
     "paused [key=nightly-build] [at=$started]: nightly build (background job, 600s timeout); resume when it ends, until $(iso_utc_at "$(( started + 600 ))")")
@@ -7491,8 +7491,18 @@ test_paused_bg_job_until_timeout_rechecks_after_the_job_ends() {
   esac
   ack_stopped_cycle "$state" || fail "could not acknowledge the due recheck"
   printf '[bg failed] nightly build - Exited with code 1 (idle)' > "$dir/pane.txt"
+  # The elapsed `until` makes the watcher ask authoritative crew state whether a
+  # run now outranks the declaration. That read can shell out to no-mistakes, and
+  # a verdict other than working must not be repeated on every poll of the same
+  # elapsed declaration.
+  export FM_FAKE_CREW_STATE_LOG="$dir/crew-state.calls"
+  : > "$FM_FAKE_CREW_STATE_LOG"
   parked_watch_round "$state" "$dir/fakebin" "$dir/watch.out" "$dir/pane.txt" test:fm-parked absorb \
-    || fail "the due recheck repeated instead of returning to the cadence"
+    || { unset FM_FAKE_CREW_STATE_LOG; fail "the due recheck repeated instead of returning to the cadence"; }
+  reads=$(wc -l < "$FM_FAKE_CREW_STATE_LOG" | tr -d ' ')
+  unset FM_FAKE_CREW_STATE_LOG
+  [ "$reads" -le 1 ] \
+    || fail "an elapsed until spent $reads current-state reads over four polls instead of at most one per escalate window"
   pass "until set to a background job's timeout rechecks the worker paused on it once the job must have ended"
 }
 

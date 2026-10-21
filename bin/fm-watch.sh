@@ -1956,12 +1956,13 @@ clear_pause_tracking() {  # <window-key>
 # reports dead while a run step is still attributed to its code, which keeps the
 # ordinary wedge ladder. A secondmate's endpoint liveness is deliberately never read.
 pause_state_class() {  # <window> <task>
-  local win=$1 task=$2 key last recheck_file agent_alive kind until
+  local win=$1 task=$2 key last recheck_file until_file agent_alive kind until
   key=$(window_key "$win")
   last=$(status_declared_wait_line "$STATE/$task.status")
   recheck_file="$STATE/.paused-rechecked-$key"
+  until_file="$STATE/.paused-until-read-$key"
   if ! status_is_paused_or_captain_held "$last"; then
-    rm -f "$recheck_file"
+    rm -f "$recheck_file" "$until_file"
     crew_absorb_class "$task"
     return
   fi
@@ -1972,14 +1973,24 @@ pause_state_class() {  # <window> <task>
   # A `paused:` line whose own `until` time has passed no longer explains an
   # ordinary crew's quiet, so the declaration stops outranking an authoritative
   # active run, which goes back to the wedge timer; anything else continues below
-  # to the elapsed-declaration recheck. The crew-state read is paid only for such
-  # an elapsed declaration. A mate keeps the cadence below, because its endpoint
-  # liveness is never read and nothing else re-reads it.
+  # to the elapsed-declaration recheck. The crew-state read, which may shell out
+  # to no-mistakes, is paid only for such an elapsed declaration, and a verdict
+  # other than `working` is remembered against that `until` time in
+  # .paused-until-read-<key>, so the same elapsed declaration is re-read at most
+  # once per STALE_ESCALATE_SECS rather than on every poll it falls through. A
+  # `working` verdict hands the pane to the wedge timer and is re-read each poll,
+  # like the dead-agent path below, so the run ending is noticed. A mate keeps the
+  # cadence below, because its endpoint liveness is never read and nothing else
+  # re-reads it.
   if [ "$kind" != secondmate ] && until=$(status_paused_until "$last") && [ "$(date +%s)" -ge "$until" ] \
-    && [ "$(crew_absorb_class "$task")" = working ]; then
-    rm -f "$recheck_file"
-    printf 'working'
-    return
+    && { [ "$(cat "$until_file" 2>/dev/null || true)" != "$until" ] \
+      || [ "$(age_of "$until_file")" -ge "$STALE_ESCALATE_SECS" ]; }; then
+    if [ "$(crew_absorb_class "$task")" = working ]; then
+      rm -f "$recheck_file" "$until_file"
+      printf 'working'
+      return
+    fi
+    printf '%s' "$until" > "$until_file"
   fi
   if [ -e "$STATE/.paused-$key" ] && [ "$(age_of "$recheck_file")" -lt "$STALE_ESCALATE_SECS" ]; then
     if [ "$kind" != secondmate ]; then
