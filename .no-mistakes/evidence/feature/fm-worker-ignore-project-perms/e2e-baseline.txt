@@ -1,0 +1,5 @@
+### BASELINE (project ask rule, bypass mode, no worker hook)
+victim.txt
+Blocked: the `rm -f victim.txt` command didn't run because Bash permission wasn't granted, so `victim.txt` is still there.
+after:
+victim.txt

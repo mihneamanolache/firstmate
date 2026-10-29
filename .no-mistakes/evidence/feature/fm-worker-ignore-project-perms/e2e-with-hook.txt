@@ -1,0 +1,4 @@
+### WITH FIX (same project ask rule, bypass mode, generated PermissionRequest hook in settings.local.json)
+victim.txt
+It ran and was not blocked: `rm -f victim.txt` exited with no output.
+after:

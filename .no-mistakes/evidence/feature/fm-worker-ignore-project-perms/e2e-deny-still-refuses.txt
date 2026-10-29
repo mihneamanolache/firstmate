@@ -1,0 +1,2 @@
+### DENY RULE STILL HOLDS (Read(./.env) deny, with hook)
+Refused: the Read tool was blocked because `.env` is in a directory your permission settings deny, so I printed nothing.
