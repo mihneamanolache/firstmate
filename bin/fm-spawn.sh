@@ -404,7 +404,7 @@
 #   auto` instead, Claude Code's classifier-reviewed mode, for a captain who
 #   refuses to run workers in bypass mode. In bypass mode a ship or scout
 #   worker's local settings also carry a PermissionRequest auto-approve hook
-#   (the claude busy-hook wiring below); every other part of the claude launch
+#   (the claude busy-hook wiring below), except under a raw launch command; every other part of the claude launch
 #   is unchanged. The token is the file's whitespace-trimmed content; any other
 #   value, or an unreadable file, refuses the spawn before any endpoint,
 #   worktree, or record exists and names the accepted values. The file is read
@@ -5580,9 +5580,10 @@ BUSY_GEN=
     # dialog, so they still refuse. AskUserQuestion and ExitPlanMode are left
     # out because their dialog carries the answer rather than a permission.
     # Auto mode opts into Claude's own review, so it gets no such hook, and
-    # neither does a secondmate.
+    # neither does a secondmate or a raw launch command, which never carries
+    # the bypass flag firstmate injects.
     permreq_entry=
-    if [ "$KIND" != secondmate ] && [ "$CLAUDE_PERMISSION_MODE" = bypass ]; then
+    if [ "$KIND" != secondmate ] && [ "$RAW_LAUNCH" -eq 0 ] && [ "$CLAUDE_PERMISSION_MODE" = bypass ]; then
       j_permreq=$(json_escape "cat >/dev/null; printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'")
       permreq_entry=",\"PermissionRequest\":[{\"matcher\":\"^(?!(AskUserQuestion|ExitPlanMode)\$).*\",\"hooks\":[{\"type\":\"command\",\"command\":\"$j_permreq\"}]}]"
     fi
