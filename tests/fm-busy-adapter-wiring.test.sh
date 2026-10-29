@@ -510,6 +510,8 @@ test_secondmate_claude_spawn_arms_busy_for_the_stall_gate() {
     "claude secondmate launch did not pass the state settings file"
   [ ! -e "$sm/.claude/settings.local.json" ] \
     || fail "claude secondmate spawn wrote the home's settings.local.json"
+  jq -e '.hooks | has("PermissionRequest") | not' "$settings" >/dev/null \
+    || fail "a claude secondmate must not get the task worker's PermissionRequest auto-approval"
   out=$(classify claude "$id" "$state")
   [ "$out" = "busy fm-spawn" ] || fail "seeded secondmate must classify busy fm-spawn, got '$out'"
   out=$(fm_busy_classify tmux "firstmate:fm-$id" claude "$id" "$state" 'working on the charter')
