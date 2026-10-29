@@ -404,8 +404,9 @@
 #   auto` instead, Claude Code's classifier-reviewed mode, for a captain who
 #   refuses to run workers in bypass mode. In bypass mode a ship or scout
 #   worker's local settings also carry a PermissionRequest auto-approve hook
-#   (the claude busy-hook wiring below), except under a raw launch command; every other part of the claude launch
-#   is unchanged. The token is the file's whitespace-trimmed content; any other
+#   (the claude busy-hook wiring below), except under a raw launch command;
+#   every other part of the claude launch is unchanged. The token is the
+#   file's whitespace-trimmed content; any other
 #   value, or an unreadable file, refuses the spawn before any endpoint,
 #   worktree, or record exists and names the accepted values. The file is read
 #   on every spawn and relaunch, so a change reaches the next launch without a
