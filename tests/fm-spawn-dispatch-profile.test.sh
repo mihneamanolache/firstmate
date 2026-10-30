@@ -2216,6 +2216,78 @@ test_claude_permission_mode_auto_reaches_scout_launch() {
   pass "config/claude-permission-mode=auto reaches scout launches too"
 }
 
+# A project's committed permissions.ask rules still raise a dialog under
+# --dangerously-skip-permissions, which parks an unattended worker. In the
+# default bypass mode a ship or scout worker's local settings therefore carry a
+# PermissionRequest hook that approves every permission dialog except the
+# AskUserQuestion and ExitPlanMode answer dialogs; auto mode keeps Claude's
+# own review and gets no such hook. Matchers are JavaScript regular
+# expressions, so node evaluates them as Claude Code does.
+claude_permreq_matches() {  # <settings> <tool-name>
+  MATCHER=$(jq -r '.hooks.PermissionRequest[0].matcher' "$1") TOOL=$2 \
+    node -e 'process.exit(new RegExp(process.env.MATCHER).test(process.env.TOOL) ? 0 : 1)'
+}
+
+test_claude_permission_request_hook_follows_permission_mode() {
+  local mode kind rec id out status settings cmd decision tool
+  for mode in absent bypass auto; do
+    for kind in ship scout; do
+      id="permreq-$mode-$kind"
+      rec=$(make_spawn_case "permreq-$mode-$kind" claude "$id")
+      read_case_record "$rec"
+      [ "$mode" = absent ] || printf '%s\n' "$mode" > "$HOME_DIR/config/claude-permission-mode"
+      if [ "$kind" = scout ]; then
+        out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id" "$PROJ_DIR" --scout)
+      else
+        out=$(run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" "$id" "$PROJ_DIR")
+      fi
+      status=$?
+      expect_code 0 "$status" "claude $kind spawn in $mode mode should succeed: $out"
+      settings="$WT_DIR/.claude/settings.local.json"
+      jq -e . "$settings" >/dev/null || fail "$mode $kind worker settings are not valid JSON"
+      if [ "$mode" = auto ]; then
+        jq -e '.hooks | has("PermissionRequest") | not' "$settings" >/dev/null \
+          || fail "auto mode worker must keep Claude's own permission review, got a PermissionRequest hook"
+        continue
+      fi
+      cmd=$(jq -r '.hooks.PermissionRequest[0].hooks[0].command' "$settings")
+      [ -n "$cmd" ] && [ "$cmd" != null ] || fail "$mode $kind worker has no PermissionRequest hook"
+      decision=$(printf '{"hook_event_name":"PermissionRequest","tool_name":"Bash"}' | sh -c "$cmd") \
+        || fail "$mode $kind PermissionRequest hook command failed"
+      [ "$(printf '%s' "$decision" | jq -r '.hookSpecificOutput.hookEventName + " " + .hookSpecificOutput.decision.behavior')" = "PermissionRequest allow" ] \
+        || fail "$mode $kind PermissionRequest hook did not allow: $decision"
+      for tool in Bash Read Write Edit WebFetch mcp__orion__describe; do
+        claude_permreq_matches "$settings" "$tool" || fail "$mode $kind PermissionRequest hook does not cover $tool"
+      done
+      for tool in AskUserQuestion ExitPlanMode; do
+        claude_permreq_matches "$settings" "$tool" && fail "$mode $kind PermissionRequest hook must leave the $tool dialog alone"
+      done
+      jq -e '.hooks | has("UserPromptSubmit") and has("Stop") and has("StopFailure") and has("SessionEnd")' "$settings" >/dev/null \
+        || fail "$mode $kind PermissionRequest hook displaced the busy-state hooks"
+    done
+  done
+  pass "bypass-mode ship and scout workers auto-approve permission dialogs; auto mode keeps Claude's review"
+}
+
+test_claude_raw_launch_gets_no_permission_request_hook() {
+  local rec id out status settings
+  id=permreq-raw-z15
+  rec=$(make_spawn_case permreq-raw claude "$id")
+  read_case_record "$rec"
+  printf 'bypass\n' > "$HOME_DIR/config/claude-permission-mode"
+  out=$(run_ship_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$LAUNCH_LOG" \
+    "$id" "$PROJ_DIR" "claude --permission-mode default")
+  status=$?
+  expect_code 0 "$status" "raw claude launch should spawn: $out"
+  assert_not_contains "$(cat "$LAUNCH_LOG")" "--dangerously-skip-permissions" "raw claude launch gained the bypass flag"
+  settings="$WT_DIR/.claude/settings.local.json"
+  if [ -e "$settings" ]; then
+    jq -e '.hooks | has("PermissionRequest") | not' "$settings" >/dev/null \
+      || fail "raw claude launch outside bypass mode got the PermissionRequest auto-approve hook"
+  fi
+  pass "a raw claude launch command never gets the PermissionRequest auto-approve hook"
+}
+
 # A Claude worker's Firstmate channel files all live outside its worktree cwd
 # (launch record in state/operational-inbox, steers in state/<id>.inbox, brief
 # in data/<id>), and since Claude Code 2.1.257 the first file-tool read of
@@ -2349,6 +2421,8 @@ test_claude_omits_config_dir_prefix_when_unset
 test_claude_permission_mode_bypass_matches_absent_launch
 test_claude_permission_mode_auto_swaps_only_the_permission_flag
 test_claude_permission_mode_auto_reaches_scout_launch
+test_claude_permission_request_hook_follows_permission_mode
+test_claude_raw_launch_gets_no_permission_request_hook
 test_claude_worker_launch_covers_task_channel_dirs
 test_claude_permission_mode_invalid_refuses_before_endpoint_or_metadata
 test_non_claude_harness_ignores_claude_permission_mode

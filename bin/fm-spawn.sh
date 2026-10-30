@@ -402,8 +402,11 @@
 #   secondmate, and relaunch) carries. Absent or `bypass` keeps today's
 #   `--dangerously-skip-permissions`; `auto` launches with `--permission-mode
 #   auto` instead, Claude Code's classifier-reviewed mode, for a captain who
-#   refuses to run workers in bypass mode. Every other part of the claude launch
-#   is unchanged. The token is the file's whitespace-trimmed content; any other
+#   refuses to run workers in bypass mode. In bypass mode a ship or scout
+#   worker's local settings also carry a PermissionRequest auto-approve hook
+#   (the claude busy-hook wiring below), except under a raw launch command;
+#   every other part of the claude launch is unchanged. The token is the
+#   file's whitespace-trimmed content; any other
 #   value, or an unreadable file, refuses the spawn before any endpoint,
 #   worktree, or record exists and names the accepted values. The file is read
 #   on every spawn and relaunch, so a change reaches the next launch without a
@@ -5569,7 +5572,23 @@ BUSY_GEN=
       j_stop=$(json_escape "${stop_turnend}$busy_cmd_prefix idle $busy_suffix --event stop 2>/dev/null || true")
       stop_entry="\"Stop\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_stop\"}]}],"
     fi
-    hooks_json="\"hooks\":{\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_submit\"}]}],${stop_entry}\"StopFailure\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_stopfail\"}]}],\"SessionEnd\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_sessionend\"}]}]}"
+    # A ship or scout worker in the default bypass mode also gets a
+    # PermissionRequest hook that approves every permission dialog. Bypass
+    # skips Claude's own checks, but a project's committed permissions.ask
+    # rules still raise a dialog in bypass mode, which parks an unattended
+    # worker. The hook answers those dialogs and leaves the project's settings,
+    # CLAUDE.md, rules, skills, commands, and hooks loaded. Deny rules raise no
+    # dialog, so they still refuse. AskUserQuestion and ExitPlanMode are left
+    # out because their dialog carries the answer rather than a permission.
+    # Auto mode opts into Claude's own review, so it gets no such hook, and
+    # neither does a secondmate or a raw launch command, which never carries
+    # the bypass flag firstmate injects.
+    permreq_entry=
+    if [ "$KIND" != secondmate ] && [ "$RAW_LAUNCH" -eq 0 ] && [ "$CLAUDE_PERMISSION_MODE" = bypass ]; then
+      j_permreq=$(json_escape "cat >/dev/null; printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}'")
+      permreq_entry=",\"PermissionRequest\":[{\"matcher\":\"^(?!(AskUserQuestion|ExitPlanMode)\$).*\",\"hooks\":[{\"type\":\"command\",\"command\":\"$j_permreq\"}]}]"
+    fi
+    hooks_json="\"hooks\":{\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_submit\"}]}],${stop_entry}\"StopFailure\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_stopfail\"}]}],\"SessionEnd\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$j_sessionend\"}]}]${permreq_entry}}"
     if [ "$KIND" = secondmate ]; then
       session_keys='"feedbackDrafts":"off",'
       if [ "$KEEP_AI_TRAILERS" != 1 ]; then

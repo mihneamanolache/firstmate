@@ -1020,8 +1020,20 @@ The token is the file's whitespace-trimmed content.
 
 An absent file defaults to bypass, so an unconfigured home launches with the bypass permission flag.
 Auto is Claude Code's classifier-reviewed permission mode, for a captain who refuses to run workers in bypass mode.
-Only the permission flag changes between the two modes.
+The permission flag and the project-prompt approval below are the only differences between the two modes.
 The environment prefix, session settings, model, effort flags, and the task-channel `--add-dir` grant below stay the same in both.
+
+### Project permission rules in bypass mode
+
+A project's committed `.claude/settings.json` can carry `permissions.ask` and `permissions.deny` rules, and Claude Code enforces both even under `--dangerously-skip-permissions`.
+An ask rule opens a permission dialog, which parks an unattended worker until someone answers it.
+So in bypass mode a ship or scout worker's `.claude/settings.local.json` also carries a `PermissionRequest` hook that approves every permission dialog.
+The exceptions are the `AskUserQuestion` and `ExitPlanMode` dialogs, because they carry an answer rather than a permission.
+The project's settings stay fully loaded, so its CLAUDE.md, rules, skills, commands, and hooks still apply.
+A deny rule opens no dialog, so it still refuses the matching tool call.
+`auto` mode opts into Claude Code's own review, so it gets no such hook.
+A Claude secondmate never gets it, in either mode.
+Neither does a worker started with a raw launch command, because firstmate does not inject the bypass flag into it.
 
 Every Claude launch, in both modes, also passes `--add-dir` for exactly this task's Firstmate channel directories, resolved to real paths: a secondmate gets the parent home's `state/<id>.inbox` it reads its steers from; a ship or scout worker gets this home's `state/operational-inbox` (its launch record), `state/<id>.inbox` (its steers), `data/<id>` (its brief and report), and the code root's `.agents/skills`.
 The grant exists because Claude Code path-checks the Read/Glob/Grep file tools against cwd plus `--add-dir`, and since 2.1.257 the first outside read in `auto` mode parks the pane on a one-time interactive question, while a "Block" answer there writes `permissions.blockReadsOutsideWorkingDirectories` into user settings and then refuses the same reads under bypass too.
